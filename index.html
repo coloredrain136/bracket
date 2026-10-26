@@ -345,6 +345,9 @@ input[type=range]:disabled{ opacity:.4; }
 
 .selwrap{ position:relative; }
 .selwrap select{ -webkit-appearance:none; appearance:none; width:100%; height:54px; border-radius:var(--r-md); border:0; background:var(--seg-bg); padding:0 44px 0 16px; font:800 21px var(--display); color:var(--text); }
+.selwrap.small{ width:150px; flex:none; }
+.selwrap.small select{ height:44px; font-size:17px; padding:0 36px 0 12px; }
+.selwrap.small svg{ right:12px; }
 .selwrap svg{ position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(90deg); color:var(--sub); pointer-events:none; }
 .datein{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .datein label{ font-size:var(--t-xs); font-weight:700; color:var(--sub); display:flex; flex-direction:column; gap:5px; }
@@ -675,7 +678,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-6';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-8';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -717,6 +720,8 @@ S.filters = Object.assign({}, DEFAULT_FILTERS, S.filters || {});
 // bracket-1 → bracket-2: one "level" (3.5) became a rating (3.50) + level filter "fit" / "up"
 if(S.level != null && S.rating == null){ const r = parseFloat(S.level); if(r) S.rating = r; }
 delete S.level;
+// Optional ratings by event type (bracket-7). Empty = use the general rating.
+S.ratings = { doubles: (S.ratings && S.ratings.doubles) ?? null, singles: (S.ratings && S.ratings.singles) ?? null };   // bracket-8: mixed uses doubles
 if(S.filters.level && S.filters.level !== 'fit' && S.filters.level !== 'up') S.filters.level = 'fit';
 if(S.filters.when === '30' || S.filters.when === '90' || S.filters.when === 'any' || S.filters.when === 'wk' || S.filters.when === 'range'){} else S.filters.when = 'any';
 let SAVES = Object.assign({ interested: {}, registered: {} }, load(LS.saves, {}));
@@ -803,12 +808,48 @@ function skillRange(s){
 const isOpenRange = (lo, hi) => lo === 0 && hi === 9;
 const covers = (lo, hi, R) => !isOpenRange(lo, hi) && lo - 0.001 <= R && R <= hi + 0.001;
 const isUp = (lo, hi, R) => !covers(lo, hi, R) && covers(lo, hi, R + 0.5) && lo > R;
+/* Ratings: a general one, plus optional Doubles / Mixed / Singles ratings that win for those events */
+const RKINDS = [['doubles', 'Doubles', "Men's, women's and mixed doubles"], ['singles', 'Singles', 'Singles events']];
+const kindName = k => (RKINDS.find(x => x[0] === k) || [k, k])[1];
+function ratingFor(kind){ const v = S.ratings && S.ratings[kind]; return v != null ? v : S.rating; }
+const specificCount = () => RKINDS.filter(k => S.ratings[k[0]] != null).length;
+const hasRating = () => S.rating != null || specificCount() > 0;
+const baseR = () => S.rating != null ? S.rating : (RKINDS.map(k => S.ratings[k[0]]).find(v => v != null));
+function evKind(e){
+  const txt = (e.group || '') + ' ' + (e.title || '');
+  if(/team/i.test(txt)) return 'doubles';
+  if(/singles/i.test(e.format || '') || /singles/i.test(txt)) return 'singles';
+  return 'doubles';
+}
+const kindOfName = n => /singles/i.test(n) ? 'singles' : 'doubles';
+const fmtKind = f => f === 'Singles' ? 'singles' : 'doubles';
+function ratingSummary(){
+  const parts = [];
+  if(S.rating != null) parts.push(rt(S.rating));
+  RKINDS.forEach(k => { if(S.ratings[k[0]] != null) parts.push(k[1] + ' ' + rt(S.ratings[k[0]])); });
+  return parts.join(' · ');
+}
+// Level ranges in a tournament, each paired with the rating that applies to it: [lo, hi, R]
+function tourRanges(t){
+  if(!t.ev) return [];
+  if(t.ev.byFormat){
+    const out = [];
+    Object.entries(t.ev.byFormat).forEach(([f, list]) => {
+      const R = ratingFor(fmtKind(f));
+      if(R == null) return;
+      list.forEach(r => { if(!isOpenRange(r[0], r[1])) out.push([r[0], r[1], R]); });
+    });
+    return out;
+  }
+  const Rs = [...new Set([S.rating, ...RKINDS.map(k => S.ratings[k[0]])].filter(v => v != null))];
+  return (t.ev.skills || []).filter(r => !isOpenRange(r[0], r[1])).flatMap(r => Rs.map(R => [r[0], r[1], R]));
+}
 function levelInfo(t){
-  if(S.rating == null || !t.ev || !t.ev.skills) return null;
-  const real = t.ev.skills.filter(r => !isOpenRange(r[0], r[1]));
-  if(!real.length) return null;
-  if(real.some(r => covers(r[0], r[1], S.rating))) return { k: 'fit', txt: '✓ Has your level' };
-  if(real.some(r => isUp(r[0], r[1], S.rating))) return { k: 'up', txt: '↑ Play-up events only' };
+  if(!hasRating() || !t.ev) return null;
+  const rr = tourRanges(t);
+  if(!rr.length) return null;
+  if(rr.some(r => covers(r[0], r[1], r[2]))) return { k: 'fit', txt: '✓ Has your level' };
+  if(rr.some(r => isUp(r[0], r[1], r[2]))) return { k: 'up', txt: '↑ Play-up events only' };
   return { k: 'no', txt: 'No events at your level' };
 }
 
@@ -872,22 +913,26 @@ function quality(t, evCount){
 const meter = (q, big) => `<span class="meter${big ? ' big' : ''}" data-q="${q}" aria-label="${q} of 5">${[1,2,3,4,5].map(i => `<i class="${i <= q ? 'f' : ''}"></i>`).join('')}</span>`;
 
 // Fit for you: how this tournament's events line up with your rating (needs the event list)
-function fitFor(events, R){
-  const real = events.map(e => ({ e, r: skillRange(e.skill) })).filter(x => x.r && !x.r.open);
-  const fits = real.filter(x => covers(x.r.lo, x.r.hi, R));
-  const ups = real.filter(x => isUp(x.r.lo, x.r.hi, R));
+// Fit for you: how this tournament's events line up with your ratings (the right one per event type)
+function fitFor(events){
+  const real = events.map(e => ({ e, r: skillRange(e.skill), R: ratingFor(evKind(e)), k: evKind(e) })).filter(x => x.r && !x.r.open && x.R != null);
+  const fits = real.filter(x => covers(x.r.lo, x.r.hi, x.R));
+  const ups = real.filter(x => isUp(x.r.lo, x.r.hi, x.R));
   const reasons = [];
+  const lab = x => specificCount() ? `your ${kindName(x.k).toLowerCase()} ${rt(x.R)}` : rt(x.R);
   if(!real.length) return { q: 0, label: FITLABEL[0], reasons: ["The events here don't list levels (Open only), so Bracket can't tell"] };
-  if(!fits.length && !ups.length) return { q: 1, label: FITLABEL[1], reasons: [`No events at ${rt(R)} or one step up`] };
+  if(!fits.length && !ups.length) return { q: 1, label: FITLABEL[1], reasons: [`No events at ${specificCount() ? 'your levels' : rt(baseR())} or one step up`] };
   if(!fits.length){
-    reasons.push(`Nothing right at ${rt(R)}, but ${pl(ups.length, 'play-up event')}`);
+    reasons.push(`Nothing right at your level, but ${pl(ups.length, 'play-up event')}`);
     reasons.push('Expect tougher matches if you play up');
     return { q: 2, label: FITLABEL[2], reasons };
   }
-  const pos = Math.max(...fits.map(x => { const hi = x.r.hi >= 9 ? x.r.lo + 0.5 : x.r.hi; return Math.max(0, Math.min(1, (R - x.r.lo) / Math.max(0.01, hi - x.r.lo))); }));
+  const posOf = x => { const hi = x.r.hi >= 9 ? x.r.lo + 0.5 : x.r.hi; return Math.max(0, Math.min(1, (x.R - x.r.lo) / Math.max(0.01, hi - x.r.lo))); };
+  const best = fits.reduce((a, x) => posOf(x) > posOf(a) ? x : a, fits[0]);
+  const pos = posOf(best);
   let q = pos >= 0.6 ? 5 : pos >= 0.3 ? 4 : 3;
   reasons.push(`${pl(fits.length, 'event')} at your level`);
-  reasons.push(pos >= 0.6 ? `At ${rt(R)} you'd be near the top of that level` : pos >= 0.3 ? `At ${rt(R)} you'd be right in the middle of that level` : `At ${rt(R)} you'd be near the bottom of that level, so expect strong opponents`);
+  reasons.push(pos >= 0.6 ? `At ${lab(best)} you'd be near the top of that level` : pos >= 0.3 ? `At ${lab(best)} you'd be right in the middle of that level` : `At ${lab(best)} you'd be near the bottom of that level, so expect strong opponents`);
   const most = Math.max(...fits.map(x => x.e.registered || 0));
   if(most < 3){ reasons.push(`Only ${pl(most, 'team')} signed up in your events so far`); if(q > 3) q--; }
   else reasons.push(`Up to ${most} teams signed up in your events`);
@@ -1015,10 +1060,9 @@ function passes(t, f = S.filters, skipWhen){
   if(f.formats.length && t.ev && t.ev.formats && t.ev.formats.length){
     if(!f.formats.some(x => t.ev.formats.includes(x))) return false;
   }
-  if(f.level && S.rating != null && t.ev && t.ev.skills){
-    const R = S.rating;
-    const real = t.ev.skills.filter(r => !isOpenRange(r[0], r[1]));
-    if(real.length && !real.some(r => covers(r[0], r[1], R) || (f.level === 'up' && isUp(r[0], r[1], R)))) return false;
+  if(f.level && hasRating() && t.ev){
+    const rr = tourRanges(t);
+    if(rr.length && !rr.some(r => covers(r[0], r[1], r[2]) || (f.level === 'up' && isUp(r[0], r[1], r[2])))) return false;
   }
   if(f.maxPrice != null && !t.free && t.price != null && t.price > f.maxPrice) return false;
   if(f.maxDist != null && S.home){
@@ -1037,7 +1081,7 @@ function matchesQuery(t, q){
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
 function activeFilterCount(f = S.filters){
-  return (f.when !== 'any') + (f.formats.length > 0) + (!!f.level && S.rating != null) + (f.maxPrice != null) + (f.maxDist != null && !!S.home) + (!!f.openOnly);
+  return (f.when !== 'any') + (f.formats.length > 0) + (!!f.level && hasRating()) + (f.maxPrice != null) + (f.maxDist != null && !!S.home) + (!!f.openOnly);
 }
 function upcomingItems(){ return (LIST && LIST.items ? LIST.items : []).filter(isUpcoming); }
 function shownItems(){ return upcomingItems().filter(t => passes(t) && matchesQuery(t, ui.q)); }
@@ -1128,20 +1172,20 @@ function renderRefresh(){
   const b = $('#refreshBtn');
   if(b) b.classList.toggle('spin', ui.loading);
 }
-function levelChipLabel(){ const mr = myRanges(S.rating); return S.filters.level === 'up' ? `Level ${mr.mine} + ${mr.up}` : `Level ${mr.mine}`; }
+function levelChipLabel(){ if(specificCount()) return S.filters.level === 'up' ? 'My levels + play up' : 'My levels'; const mr = myRanges(baseR()); return S.filters.level === 'up' ? `Level ${mr.mine} + ${mr.up}` : `Level ${mr.mine}`; }
 function renderChips(){
   const f = S.filters, n = activeFilterCount();
   const chips = [`<button class="chip glass${n ? ' on' : ''}" data-act="filters">${icon('filter')}Filters${n ? `<span class="n">${n}</span>` : ''}</button>`];
   const add = (k, label) => chips.push(`<button class="chip glass on" data-act="clear-filter" data-k="${k}" aria-label="Remove filter ${esc(label)}">${esc(label)}<span class="cx">${icon('x')}</span></button>`);
   if(f.when !== 'any') add('when', whenLabel());
-  if(f.level && S.rating != null) add('level', levelChipLabel());
+  if(f.level && hasRating()) add('level', levelChipLabel());
   if(f.formats.length) add('formats', f.formats.join(', '));
   if(f.maxPrice != null) add('maxPrice', '$' + f.maxPrice + ' or less');
   if(f.maxDist != null && S.home) add('maxDist', 'Within ' + f.maxDist + ' mi');
   if(f.openOnly) add('openOnly', 'Open to register');
   if(!n){
     chips.push(`<button class="chip glass" data-act="quick" data-k="wk">This weekend</button>`);
-    if(S.rating != null) chips.push(`<button class="chip glass" data-act="quick" data-k="level">My level (${myRanges(S.rating).mine})</button>`);
+    if(hasRating()) chips.push(`<button class="chip glass" data-act="quick" data-k="level">${specificCount() ? 'My levels' : `My level (${myRanges(baseR()).mine})`}</button>`);
     chips.push(`<button class="chip glass" data-act="quick" data-k="open">Open to register</button>`);
   }
   $('#chips').innerHTML = chips.join('');
@@ -1300,10 +1344,10 @@ function segHTML(name, opts, cur, cls = ''){
   return `<div class="seg ${cls}${i < 0 ? ' none' : ''}" data-seg="${name}" style="--n:${opts.length};--i:${Math.max(0, i)}"><span class="thumb"></span>${opts.map(o => `<button data-v="${esc(o[0])}" aria-pressed="${o[0] === cur}">${esc(o[1])}</button>`).join('')}</div>`;
 }
 function swHTML(act, on, label){ return `<button class="sw" role="switch" data-act="${act}" aria-checked="${!!on}" aria-label="${esc(label)}"></button>`; }
-function ratingSelect(id){
-  let o = `<option value="">Not set</option>`;
-  for(let v = 2; v <= 6.001; v += 0.05) o += `<option value="${v.toFixed(2)}" ${S.rating != null && Math.abs(S.rating - v) < 0.001 ? 'selected' : ''}>${v.toFixed(2)}</option>`;
-  return `<div class="selwrap"><select id="${id}" data-rating aria-label="Your rating">${o}</select>${icon('chev')}</div>`;
+function ratingSelect(id, val = S.rating, kind = '', empty = 'Not set', small = false){
+  let o = `<option value="">${empty}</option>`;
+  for(let v = 2; v <= 6.001; v += 0.05) o += `<option value="${v.toFixed(2)}" ${val != null && Math.abs(val - v) < 0.001 ? 'selected' : ''}>${v.toFixed(2)}</option>`;
+  return `<div class="selwrap${small ? ' small' : ''}"><select id="${id}" data-rating ${kind ? `data-rating-kind="${kind}"` : ''} aria-label="${kind ? esc(kindName(kind)) + ' rating' : 'Your rating'}">${o}</select>${icon('chev')}</div>`;
 }
 const row = (act, ic, color, t, v, sub) => `<button class="gitem" data-act="${act}">${tile(ic, color)}<span class="t">${t}${sub ? `<small>${sub}</small>` : ''}</span>${v != null ? `<span class="v">${esc(v)}</span>` : ''}<svg class="i chev"><use href="#i-chev"/></svg></button>`;
 const SIZE_NAMES = { m: 'Default', l: 'Large', xl: 'Larger' };
@@ -1322,7 +1366,7 @@ function renderSettings(){
     <div class="group-l">You</div>
     <div class="group">
       ${row('sp-home', 'pin', 'green', 'Home', S.home ? (S.home.src === 'gps' ? (S.home.near ? 'Near ' + S.home.near : 'My location') : S.home.name) : 'Not set')}
-      ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) : 'Not set')}
+      ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) + (specificCount() ? ` +${specificCount()}` : '') : specificCount() ? ratingSummary() : 'Not set')}
       <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>Shows how each tournament fits your rating</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
     </div>
     <p class="gfoot">Home is used for distances. Your rating finds events at your level. ${acct.user ? 'Both sync to your account.' : 'Both stay on this phone.'}</p>
@@ -1353,8 +1397,12 @@ function settingsPage(p){
     <div class="group" style="padding:16px">${locPicker()}</div></div>`;
   if(p === 'rating') return `<div class="spage">${pageHead('Your rating')}
     <p class="big-sub">Pick your rating, like your DUPR. Not sure? Pick the level you usually play, like 3.50.</p>
+    <div class="group-l" style="margin-top:6px">General rating</div>
     ${ratingSelect('ratingSel')}
     <p class="gfoot">Example: at 3.40 your level is 3.0–3.5 events. One step up (“playing up”) is 3.5–4.0.</p>
+    <div class="group-l">By event type <span style="text-transform:none;letter-spacing:0;font-weight:600">(optional)</span></div>
+    <div class="group">${RKINDS.map(k => `<div class="gitem noicon"><span class="t">${k[1]}<small>${k[2]}</small></span>${ratingSelect('r_' + k[0], S.ratings[k[0]], k[0], 'General', true)}</div>`).join('')}</div>
+    <p class="gfoot">DUPR gives separate doubles and singles ratings. Bracket uses the right one for each event (mixed counts as doubles). Anything left on “General” uses your general rating.</p>
     <div class="group-l">How Bracket uses it</div>
     <div class="group">
       <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>A meter in each tournament for how well it fits you</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
@@ -1381,7 +1429,7 @@ function settingsPage(p){
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
   if(p === 'account'){
-    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your rating, home city and the Fit for you setting<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings, home city and the Fit for you setting<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
     if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
       ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
     return `<div class="spage">${pageHead('Account')}
@@ -1431,7 +1479,7 @@ function settingsPage(p){
       <p style="margin-top:8px">“Closes” and “Opens” show once Bracket has loaded that tournament's details (open it once, or save it).</p></div>
     <div class="group-l">Levels and your rating</div>
     <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Bracket always shows levels as a range. A “3.5” event means 3.5–3.99. Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
-      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
+      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
     <div class="group-l">Quality meter</div>
     <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
     <div class="group-l">Fit for you</div>
@@ -1502,7 +1550,7 @@ function detailBody(t){
   }
   const st = statusOf(tt);
   const d = distOf(det.lat != null ? { lat: det.lat, lng: det.lng } : tt);
-  const R = S.rating;
+  const R = hasRating() ? baseR() : null;   // "do you have a rating at all"; each event uses ratingFor(its type)
 
   let h = '';
   if(tt.startDay) h += `<div class="d-kick">${esc(dateRangeLong(tt))}${tt.city ? ' · ' + esc(tt.city) : ''}</div>`;
@@ -1562,8 +1610,8 @@ function detailBody(t){
     if(R == null){
       h += `<div class="blk fit"><h3>Fit for you</h3><p class="desc">Add your rating and Bracket will show how well this tournament fits you.</p><div class="btnrow"><button class="btn sm ghost" data-act="go-rating">${icon('target')}Add your rating</button></div></div>`;
     } else if(events.length){
-      const f = fitFor(events, R);
-      h += `<div class="blk fit"><h3>Fit for you<small>your rating ${rt(R)}</small></h3><div class="qhead">${meter(f.q, true)}<b>${f.label}</b></div><ul class="reasons">${f.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul><p class="fine">Based on your rating and each event's level. Bracket can't see your match history.</p></div>`;
+      const f = fitFor(events);
+      h += `<div class="blk fit"><h3>Fit for you<small>${specificCount() ? 'your ratings' : 'your rating ' + rt(R)}</small></h3><div class="qhead">${meter(f.q, true)}<b>${f.label}</b></div><ul class="reasons">${f.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul><p class="fine">Based on your rating and each event's level. Bracket can't see your match history.</p></div>`;
     } else if(loading){
       h += '<div class="skel sm" style="margin:16px 0"></div>';
     }
@@ -1590,8 +1638,9 @@ function detailBody(t){
   if(events.length){
     const tagged = events.map(e => {
       const r = skillRange(e.skill);
-      const mine = R != null && r && !r.open && covers(r.lo, r.hi, R);
-      const upE = R != null && r && !r.open && isUp(r.lo, r.hi, R);
+      const Re = R != null ? ratingFor(evKind(e)) : null;
+      const mine = Re != null && r && !r.open && covers(r.lo, r.hi, Re);
+      const upE = Re != null && r && !r.open && isUp(r.lo, r.hi, Re);
       return Object.assign({ r, mine, upE }, e);
     });
     const mineCount = tagged.filter(e => e.mine).length, upCount = tagged.filter(e => e.upE).length;
@@ -1620,7 +1669,7 @@ function detailBody(t){
       });
       h += '</details>';
     });
-    if(showMine) h += `<p class="fine">Showing ${pl(mineCount + upCount, 'event')} at or one step above ${rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${events.length}</button></p>`;
+    if(showMine) h += `<p class="fine">Showing ${pl(mineCount + upCount, 'event')} at or one step above ${specificCount() ? 'your levels' : rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${events.length}</button></p>`;
     h += '</div>';
   } else if(loading){
     h += '<div class="skel" style="margin:16px 0"></div>';
@@ -1863,7 +1912,7 @@ async function pullSync(){
   try {
     const [sv, pf] = await Promise.all([
       sb.from('bracket_saves').select('kind,slug,snap'),
-      sb.from('bracket_profile').select('rating,home,fit').eq('user_id', uid).maybeSingle()
+      sb.from('bracket_profile').select('*').eq('user_id', uid).maybeSingle()
     ]);
     if(sv.error) throw sv.error;
     if(pf.error) throw pf.error;
@@ -1877,11 +1926,18 @@ async function pullSync(){
     save(LS.saves, SAVES);
     const p = pf.data;
     if(p){
-      if(first){ if(S.rating == null && p.rating != null) S.rating = +p.rating; if(!S.home && p.home) S.home = p.home; }
-      else { S.rating = p.rating != null ? +p.rating : null; S.home = p.home || null; if(p.fit != null) S.fit = p.fit; }
+      const pr = p.ratings && typeof p.ratings === 'object' ? p.ratings : null;
+      if(first){
+        if(S.rating == null && p.rating != null) S.rating = +p.rating;
+        if(!S.home && p.home) S.home = p.home;
+        if(pr) RKINDS.forEach(k => { if(S.ratings[k[0]] == null && pr[k[0]] != null) S.ratings[k[0]] = +pr[k[0]]; });
+      } else {
+        S.rating = p.rating != null ? +p.rating : null; S.home = p.home || null; if(p.fit != null) S.fit = p.fit;
+        if(pr) RKINDS.forEach(k => { S.ratings[k[0]] = pr[k[0]] != null ? +pr[k[0]] : null; });
+      }
     }
     S.syncedUser = uid; S.syncDirty = false; save(LS.settings, S);
-    acct.profSent = p ? JSON.stringify({ rating: p.rating != null ? +p.rating : null, home: p.home || null, fit: p.fit }) : null;
+    acct.profSent = null;   // pushProfile compares and skips if nothing changed on the server side next time
     acct.syncing = false;
     await pushSaves();
     await pushProfile();
@@ -1928,11 +1984,15 @@ function scheduleProfile(){
 }
 async function pushProfile(){
   if(!sb || !acct.user) return;
-  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false };
+  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false, ratings: S.ratings };
   const key = JSON.stringify(body);
   if(key === acct.profSent) return;
   try {
-    const { error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, body), { onConflict: 'user_id' });
+    let { error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, body), { onConflict: 'user_id' });
+    if(error && /ratings/i.test(error.message || '')){   // 3-ratings.sql not run yet: sync the rest
+      const b2 = Object.assign({}, body); delete b2.ratings;
+      ({ error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, b2), { onConflict: 'user_id' }));
+    }
     if(error) throw error;
     acct.profSent = key;
   } catch(e){ acct.error = 'Couldn’t sync your rating and home.'; renderSyncLine(); }
@@ -2016,7 +2076,7 @@ function partnerBlock(t, events){
   else if(!posts.length) h += `<p class="desc" style="margin-bottom:10px">Nobody's looking yet. Post that you need a partner and other players can ask to team up.</p>`;
   posts.forEach(p => {
     const mine = p.user_id === me;
-    const near = S.rating != null && p.rating != null && Math.abs(p.rating - S.rating) <= 0.25 && !mine;
+    const myR = ratingFor(kindOfName(p.event)); const near = myR != null && p.rating != null && Math.abs(p.rating - myR) <= 0.25 && !mine;
     h += `<div class="pp${near ? ' near' : ''}"><div class="pp-top"><b>${esc(p.display_name)}</b>${p.rating != null ? `<span class="tag info">${rt(p.rating)}</span>` : ''}${near ? '<span class="yl" style="margin:0">Close to your rating</span>' : ''}${mine ? `<span class="tag reg">${p.status === 'found' ? 'Found a partner' : 'Your post'}</span>` : ''}</div>
       <div class="pp-ev">${esc(p.event)}</div>${p.note ? `<p>${esc(p.note)}</p>` : ''}
       <div class="pp-foot"><span>Posted ${relAgo(p.created_at)}</span>${mine ? `<button class="linkbtn" data-act="tab" data-tab="mine">Manage in Mine</button>` : `<button class="linkbtn" data-act="p-report" data-id="${esc(p.id)}">Report</button>`}</div>
@@ -2043,7 +2103,7 @@ function openNewPost(slug){
     <div class="flabel">Which event?</div>
     <div class="chipset" style="margin-bottom:18px">${opts.map((o, i) => `<button class="chip plain" data-act="p-ev" data-v="${esc(o)}" aria-pressed="${i === 0}">${esc(o)}</button>`).join('')}</div>
     <div class="flabel">Your rating</div>
-    <div style="margin-bottom:16px">${ratingSelect('pRating')}</div>
+    <div style="margin-bottom:16px">${ratingSelect('pRating', ratingFor(kindOfName(opts[0])))}</div>
     <label class="field"><span>Name shown</span><input id="pName" maxlength="40" value="${esc(shortName())}"></label>
     <label class="field"><span>Note <span style="font-weight:500;color:var(--sub)">(optional)</span></span><textarea id="pNote" maxlength="280" style="min-height:100px" placeholder="Days you can play, what kind of partner you're looking for…"></textarea></label>`,
     foot: `<button class="btn primary" style="flex:1" data-act="p-post" data-slug="${esc(slug)}">Post</button>` });
@@ -2069,7 +2129,7 @@ function openAsk(id, slug){
   openSheet({ title: `Ask ${p.display_name} to team up`, body: `
     <p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">${esc(p.event)} · ${esc(t.title)}</p>
     <label class="field"><span>Your name</span><input id="aName" maxlength="40" value="${esc(shortName())}"></label>
-    <div class="flabel">Your rating</div><div style="margin-bottom:16px">${ratingSelect('aRating')}</div>
+    <div class="flabel">Your rating</div><div style="margin-bottom:16px">${ratingSelect('aRating', ratingFor(kindOfName(p.event)))}</div>
     <label class="field"><span>How can they reach you?</span><input id="aContact" maxlength="120" inputmode="email" placeholder="Phone number or email" value="${esc(acct.user && acct.user.email || '')}"></label>
     <p class="hint" style="margin:-6px 2px 14px">Only ${esc(p.display_name)} will see this.</p>
     <label class="field"><span>Message <span style="font-weight:500;color:var(--sub)">(optional)</span></span><textarea id="aMsg" maxlength="280" style="min-height:90px" placeholder="Hi! I'm a 3.4 and free both days…"></textarea></label>`,
@@ -2245,12 +2305,12 @@ function filterBody(){
     <button class="opt" data-act="fx" data-v="dates" aria-expanded="${!!openDates}" aria-pressed="${f.when === 'range'}"><span class="ck">${icon('check')}</span><span class="t">Pick dates${f.when === 'range' && f.from ? `<small>${fmtSpan(f.from, f.to || f.from)}</small>` : ''}</span>${icon('chev', 'i chev')}</button>
     ${openDates ? `<div class="expand"><div class="datein"><label>From<input type="date" data-date="from" min="${td}" value="${f.when === 'range' && f.from ? f.from : ''}"></label><label>To<input type="date" data-date="to" min="${td}" value="${f.when === 'range' && f.to ? f.to : ''}"></label></div></div>` : ''}
   </div></div>`;
-  if(S.rating != null){
-    const mr = myRanges(S.rating);
-    h += `<div class="fsec"><div class="group-l">Level · your rating ${rt(S.rating)}</div><div class="group">
+  if(hasRating()){
+    const mr = myRanges(baseR()), multi = specificCount() > 0;
+    h += `<div class="fsec"><div class="group-l">Level · ${multi ? 'your ratings ' : 'your rating '}${esc(ratingSummary())}</div><div class="group">
       ${opt('lvl', '', !f.level, 'Any level', null, count({ level: null }))}
-      ${opt('lvl', 'fit', f.level === 'fit', 'My level', `Events that include ${rt(S.rating)}, like ${mr.mine}`, count({ level: 'fit' }))}
-      ${opt('lvl', 'up', f.level === 'up', 'My level + play up', `Also one step up, like ${mr.up}`, count({ level: 'up' }))}
+      ${opt('lvl', 'fit', f.level === 'fit', 'My level', multi ? 'Events that fit your rating for each event type' : `Events that include ${rt(baseR())}, like ${mr.mine}`, count({ level: 'fit' }))}
+      ${opt('lvl', 'up', f.level === 'up', 'My level + play up', multi ? 'Also one step up from each rating' : `Also one step up, like ${mr.up}`, count({ level: 'up' }))}
     </div></div>`;
   } else {
     h += `<div class="fsec"><div class="group-l">Level</div><div class="group"><button class="gitem" data-act="go-rating">${tile('target', 'blue')}<span class="t">Set your rating<small>Then you can show only events at your level</small></span><svg class="i chev"><use href="#i-chev"/></svg></button></div></div>`;
@@ -2539,7 +2599,11 @@ document.addEventListener('click', e => {
     case 'fbkind': ui.fb.kind = el.dataset.v; document.querySelectorAll('[data-act="fbkind"]').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
     case 'fbsend': sendFeedback(el); break;
     case 'p-new': if(!acct.user){ signIn(); break; } openNewPost(slug); break;
-    case 'p-ev': ui.pEvent = el.dataset.v; el.parentElement.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
+    case 'p-ev': {
+      ui.pEvent = el.dataset.v; el.parentElement.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === el));
+      const r = ratingFor(kindOfName(ui.pEvent)), sel = $('#pRating'); if(sel) sel.value = r != null ? (+r).toFixed(2) : '';
+      break;
+    }
     case 'p-post': submitPost(el, slug); break;
     case 'p-ask': if(!acct.user){ signIn(); break; } openAsk(el.dataset.id, slug); break;
     case 'p-send': submitAsk(el, el.dataset.id, slug); break;
@@ -2577,9 +2641,16 @@ function onSeg(name, v){
 document.addEventListener('change', e => {
   const t = e.target;
   if(t.matches('[data-rating]') && (t.id === 'pRating' || t.id === 'aRating')) return;
-  if(t.matches('[data-rating]')){
+  if(t.matches('[data-rating-kind]')){
+    const k = t.dataset.ratingKind;
+    S.ratings[k] = t.value ? parseFloat(t.value) : null;
+    if(!hasRating()) S.filters.level = null;
+    saveSettings();
+    toast(S.ratings[k] != null ? kindName(k) + ' rating set to ' + rt(S.ratings[k]) : kindName(k) + ' now uses your general rating');
+    refreshOpenDetail();
+  } else if(t.matches('[data-rating]')){
     S.rating = t.value ? parseFloat(t.value) : null;
-    if(S.rating == null) S.filters.level = null;
+    if(!hasRating()) S.filters.level = null;
     saveSettings();
     if(t.id === 'ratingSel') toast(S.rating != null ? 'Rating set to ' + rt(S.rating) : 'Rating cleared');
     refreshOpenDetail();

@@ -11,7 +11,7 @@ import { getActionId, searchPage, getEvents, isMichigan, skillRange } from './_l
 export const config = { maxDuration: 45 };
 
 const MAX_PAGES = 6;
-const VERSION = 'bracket-6';
+const VERSION = 'bracket-8';
 
 async function allPages(actionId, log){
   const first = await searchPage(actionId, 1);
@@ -38,22 +38,25 @@ async function pool(items, n, fn){
 
 function summarizeEvents(events){
   const formats = new Set(), skills = new Map(), ages = new Set(), days = new Set();
+  const byFormat = {};   // level ranges per format, so Bracket can use your mixed / singles rating for those events
   let timed = false, registered = 0;
   events.forEach(e => {
     if(e.canceled) return;
-    if(/team/i.test(e.group + ' ' + e.title)) formats.add('Team');
-    else if(/mixed/i.test(e.players)) formats.add('Mixed');
-    else if(/singles/i.test(e.format)) formats.add('Singles');
-    else formats.add('Doubles');
+    const fmt = /team/i.test(e.group + ' ' + e.title) ? 'Team' : /mixed/i.test(e.players) ? 'Mixed' : /singles/i.test(e.format) ? 'Singles' : 'Doubles';
+    formats.add(fmt);
     const r = skillRange(e.skill);
-    if(r) skills.set(r.lo + '-' + r.hi, [r.lo, r.hi]);
+    if(r){
+      skills.set(r.lo + '-' + r.hi, [r.lo, r.hi]);
+      const list = byFormat[fmt] = byFormat[fmt] || [];
+      if(!list.some(x => x[0] === r.lo && x[1] === r.hi)) list.push([r.lo, r.hi]);
+    }
     if(e.age) ages.add(e.age);
     if(/\d{1,2}:\d{2}\s*[AP]M/i.test(e.date)) timed = true;
     const d = e.date.match(/^[A-Za-z]{3} \d{1,2} \d{4}/);
     if(d) days.add(d[0]);
     registered += e.registered;
   });
-  return { n: events.filter(e => !e.canceled).length, formats: [...formats], skills: [...skills.values()], ages: [...ages].slice(0, 12), timed, registered };
+  return { n: events.filter(e => !e.canceled).length, formats: [...formats], skills: [...skills.values()], byFormat, ages: [...ages].slice(0, 12), timed, registered };
 }
 
 export default async function handler(req, res){
