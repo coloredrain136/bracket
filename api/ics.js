@@ -31,7 +31,7 @@ export default async function handler(req, res){
   const url = PT + '/tournaments/' + slug;
   const where = d ? [d.venue, d.street, d.cityStateZip].filter(Boolean).join(', ') : '';
   const lines = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Bracket//Michigan pickleball tournaments//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Bracket//Michigan pickleball tournaments//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsText('🏓 ' + it.title), 'X-WR-TIMEZONE:America/Detroit',
     'BEGIN:VEVENT',
     'UID:' + slug + '@bracket',
     'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),

@@ -12,6 +12,7 @@ export default function handler(req, res){
   return res.status(200).json({
     version: APP_VERSION,
     supabase: /^https:\/\//.test(url) && key ? { url, key } : null,
-    feedback: !!(url && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY))
+    feedback: !!(url && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)),
+    push: String(process.env.VAPID_PUBLIC_KEY || '').trim() || null
   });
 }
