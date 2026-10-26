@@ -246,7 +246,7 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .card .newdot{ position:absolute; top:14px; left:10px; width:10px; height:10px; border-radius:50%; background:#ff9f0a; box-shadow:0 0 0 3px var(--bg); }
 .mine-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 2px 0; padding:12px 14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); font-weight:600; }
 .mine-bar button{ color:inherit; font-weight:800; text-decoration:underline; white-space:nowrap; }
-.actions{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
+.actions{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
 .act{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 4px 10px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-xs); font-weight:700; color:var(--text); text-align:center; }
 .act svg{ width:22px; height:22px; color:var(--accent-text); }
 .steps{ list-style:none; margin:4px 0 0; padding:0; counter-reset:st; }
@@ -322,10 +322,10 @@ html[data-mode="light"] #tabs .thumb{ box-shadow:0 2px 8px rgba(20,60,35,.12); }
 .tab .badge{ position:absolute; top:5px; left:calc(50% + 7px); min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:#ff9f0a; color:#2b1a00; font-size:11.5px; font-weight:800; display:grid; place-items:center; }
 
 /* ============ Segmented, switches, sliders, selects ============ */
-.seg{ position:relative; display:grid; grid-template-columns:repeat(var(--n), minmax(0,1fr)); padding:3px; border-radius:12px; background:var(--seg-bg); }
-.seg .thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / var(--n)); border-radius:9px; background:var(--seg-thumb); box-shadow:inset 0 1px 0 var(--g-hi), 0 2px 8px rgba(0,0,0,.12); transform:translateX(calc(100% * var(--i))); transition:transform var(--mid) var(--spring); }
+.seg{ position:relative; display:grid; grid-template-columns:repeat(var(--n), minmax(0,1fr)); padding:4px; border-radius:var(--r-pill); background:var(--seg-bg); }
+.seg .thumb{ position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / var(--n)); border-radius:var(--r-pill); background:var(--seg-thumb); box-shadow:inset 0 1px 0 var(--g-hi), 0 2px 8px rgba(0,0,0,.12); transform:translateX(calc(100% * var(--i))); transition:transform var(--mid) var(--spring); }
 .seg.none .thumb{ opacity:0; }
-.seg button{ position:relative; z-index:1; height:38px; font-size:var(--t-sm); font-weight:600; color:var(--sub); border-radius:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; }
+.seg button{ position:relative; z-index:1; height:38px; font-size:var(--t-sm); font-weight:600; color:var(--sub); border-radius:var(--r-pill); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; }
 .seg button[aria-pressed="true"]{ color:var(--text); font-weight:700; }
 .seg.dis{ opacity:.45; pointer-events:none; }
 .seg.tall button{ height:42px; font-size:var(--t-md); display:flex; align-items:center; justify-content:center; gap:7px; }
@@ -487,6 +487,19 @@ input[type=range]:disabled{ opacity:.4; }
 .spage .big-title{ padding-top:6px; }
 .spage{ animation:slidein .32s var(--ease); }
 @keyframes slidein{ from{ opacity:0; transform:translateX(24px); } to{ opacity:1; transform:none; } }
+.field{ display:block; margin:0 0 14px; }
+.field > span{ display:block; font-size:var(--t-sm); font-weight:700; margin:0 2px 7px; }
+.field textarea, .field input{ display:block; width:100%; max-width:100%; min-width:0; border:0; outline:0; border-radius:var(--r-md); background:var(--seg-bg); color:var(--text); font-size:17px; padding:13px 14px; box-shadow:inset 0 0 0 1px var(--line); }
+.field textarea{ font-family:var(--font); min-height:150px; resize:vertical; line-height:1.45; }
+.field textarea:focus, .field input:focus{ box-shadow:inset 0 0 0 2px var(--accent); }
+.trap{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+.avatar{ width:44px; height:44px; border-radius:50%; flex:none; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); font:800 19px var(--display); overflow:hidden; }
+.avatar img{ width:100%; height:100%; object-fit:cover; }
+.gbtn{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:52px; border-radius:var(--r-md); background:#fff; color:#1f1f1f; font-weight:700; font-size:var(--t-md); box-shadow:0 0 0 1px rgba(0,0,0,.12), var(--shadow-sm); }
+.gbtn svg{ width:20px; height:20px; }
+.syncline{ display:flex; align-items:center; gap:6px; font-size:var(--t-xs); color:var(--sub); }
+.syncline i{ width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; }
+.syncline i.err{ background:#ff9f0a; }
 .preview{ padding:14px 16px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-md); }
 
 /* Help page */
@@ -525,7 +538,7 @@ input[type=range]:disabled{ opacity:.4; }
 .wfine{ font-size:var(--t-xs); color:var(--faint); text-align:center; margin-top:18px; line-height:1.5; }
 
 /* ============ Toast ============ */
-#toast{ position:fixed; z-index:90; left:50%; bottom:calc(var(--sab) + var(--tab-h) + 24px); transform:translate(-50%, 20px); opacity:0; pointer-events:none; display:flex; align-items:center; gap:14px; max-width:calc(100% - 32px); padding:13px 18px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; transition:transform var(--mid) var(--spring), opacity var(--mid); }
+#toast{ position:fixed; z-index:90; left:50%; bottom:calc(var(--sab) + var(--tab-h) + 24px); transform:translate(-50%, 20px); opacity:0; pointer-events:none; display:flex; align-items:center; gap:14px; width:max-content; max-width:calc(100% - 32px); padding:13px 18px; border-radius:22px; line-height:1.35; font-size:var(--t-sm); font-weight:600; transition:transform var(--mid) var(--spring), opacity var(--mid); }
 #toast.show{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
 #toast button{ color:var(--accent-text); font-weight:800; }
 
@@ -626,7 +639,7 @@ input[type=range]:disabled{ opacity:.4; }
 
     <section class="view" id="v-mine" aria-label="Mine">
       <h1 class="big-title">Mine</h1>
-      <p class="big-sub">Tournaments you saved, on this device.</p>
+      <p class="big-sub" id="mineSub">Tournaments you saved, on this device.</p>
       <div id="mineSeg"></div>
       <div id="mineList"></div>
     </section>
@@ -648,7 +661,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-3';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-4';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -697,8 +710,8 @@ let LIST = load(LS.list, null);          // { fetchedAt, savedAt, items }
 let DET = load(LS.details, {});          // { slug: { at, data } }
 const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, spage: null, calMonth: null, calDay: null, fx: {}, config: null };
 
-function saveSettings(){ save(LS.settings, S); }
-function saveSaves(){ save(LS.saves, SAVES); }
+function saveSettings(){ save(LS.settings, S); scheduleProfile(); }
+function saveSaves(){ save(LS.saves, SAVES); scheduleSync(); }
 
 /* ---------------- Helpers ---------------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -1284,14 +1297,19 @@ function renderSettings(){
   const el = $('#v-settings');
   if(ui.spage){ el.innerHTML = settingsPage(ui.spage); return; }
   const b = mineBuckets();
+  const sbOn = !!(ui.config && ui.config.supabase);
+  const account = !sbOn ? '' : acct.user
+    ? `<div class="group-l">Account</div><div class="group"><button class="gitem" data-act="sp-account">${avatarHTML()}<span class="t">${esc(acctName())}<small><span class="syncline" data-syncline><i class="${acct.error ? 'err' : ''}"></i>${esc(syncText())}</span></small></span><svg class="i chev"><use href="#i-chev"/></svg></button></div>`
+    : `<div class="group-l">Account</div><div class="group"><div class="gitem col"><span class="t">Keep your saves on every device<small>Sign in and your Interested, Registered and History follow you to your phone, iPad and computer.</small></span><button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button></div></div><p class="gfoot">Optional. Bracket works fine without an account. <button class="linkbtn" data-act="sp-account">What gets saved</button></p>`;
   el.innerHTML = `<h1 class="big-title">Settings</h1>
+    ${account}
     <div class="group-l">You</div>
     <div class="group">
       ${row('sp-home', 'pin', 'green', 'Home', S.home ? (S.home.src === 'gps' ? (S.home.near ? 'Near ' + S.home.near : 'My location') : S.home.name) : 'Not set')}
       ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) : 'Not set')}
       <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>Shows how each tournament fits your rating</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
     </div>
-    <p class="gfoot">Home is used for distances. Your rating finds events at your level. Both stay on this phone.</p>
+    <p class="gfoot">Home is used for distances. Your rating finds events at your level. ${acct.user ? 'Both sync to your account.' : 'Both stay on this phone.'}</p>
     <div class="group-l">Display</div>
     <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}</div>
     <div class="group-l">Help</div>
@@ -1303,7 +1321,7 @@ function renderSettings(){
     <div class="group-l">Spread the word</div>
     <div class="group">
       ${row('share-app', 'share', 'blue', 'Share Bracket', null, 'Send it to your partner or club')}
-      ${ui.config && ui.config.feedback ? `<a class="gitem" href="${esc(ui.config.feedback)}" target="_blank" rel="noopener">${tile('chat', 'teal')}<span class="t">Send feedback<small>Ideas, problems, a missing tournament</small></span><svg class="i chev"><use href="#i-chev"/></svg></a>` : ''}
+      ${ui.config && ui.config.feedback ? row('sp-feedback', 'chat', 'teal', 'Send feedback', null, 'Ideas, problems, a missing tournament') : ''}
     </div>
     <div class="group-l">Your data</div>
     <div class="group">${row('sp-data', 'box', 'red', 'Saved on this phone', `${b.interested.length + b.registered.length + b.history.length}`)}</div>
@@ -1340,16 +1358,42 @@ function settingsPage(p){
       <div class="gitem noicon"><span class="t">Registered</span><span class="v">${b.registered.length}</span></div>
       <div class="gitem noicon"><span class="t">History</span><span class="v">${b.history.length}</span></div>
     </div>
-    <p class="gfoot">Your saves live only in this browser. If you delete Bracket from your Home Screen or clear Safari's website data, they go away. Accounts that keep them safe across devices are coming later.</p>
+    <p class="gfoot">${acct.user ? 'These are synced to your account, so they come back when you sign in on any device.' : "Your saves live only in this browser. If you delete Bracket from your Home Screen or clear Safari's website data, they go away. Sign in (Settings → Account) to keep them safe."}</p>
     <div class="group-l">Erase</div>
     <div class="group">
       <button class="gitem noicon danger" data-act="clear-saves"><span class="t">Clear saved tournaments</span></button>
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
+  if(p === 'account'){
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your rating, home city and the Fit for you setting</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
+      ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
+    return `<div class="spage">${pageHead('Account')}
+      <div class="group"><div class="gitem">${avatarHTML()}<span class="t">${esc(acctName())}<small>${esc(acct.user.email || '')}</small></span></div>
+      <div class="gitem noicon"><span class="t"><span class="syncline" data-syncline><i class="${acct.error ? 'err' : ''}"></i>${esc(syncText())}</span></span><button class="btn sm ghost" data-act="sync-now">Sync now</button></div></div>
+      <p class="gfoot">Saves, your rating and home sync to every device where you sign in with this Google account.</p>
+      ${stored}
+      <div class="group-l">Account</div>
+      <div class="group"><button class="gitem noicon" data-act="signout"><span class="t" style="color:var(--accent-text)">Sign out</span></button>
+      <button class="gitem noicon danger" data-act="del-account"><span class="t">Delete account<small>Erases everything synced. This phone keeps its own copy.</small></span></button></div></div>`;
+  }
+  if(p === 'feedback'){
+    if(ui.fb && ui.fb.sent) return `<div class="spage">${pageHead('Send feedback')}<div class="empty"><div class="ico">${icon('check')}</div><h3>Thank you!</h3><p>Your note was sent. It really helps make Bracket better.</p><button class="btn ghost" data-act="fb-again">Send another</button></div></div>`;
+    ui.fb = ui.fb || { kind: 'idea' };
+    return `<div class="spage">${pageHead('Send feedback')}
+      <p class="big-sub">Tell us what to fix, what to add, or a tournament that's missing. It goes straight to the person who makes Bracket.</p>
+      <div class="group-l" style="margin-top:6px">What's it about?</div>
+      <div class="chipset" style="margin:0 2px 18px">${FB_KINDS.map(k => `<button class="chip plain" data-act="fbkind" data-v="${k[0]}" aria-pressed="${ui.fb.kind === k[0]}">${k[1]}</button>`).join('')}</div>
+      <label class="field"><span>Your message</span><textarea id="fbMsg" maxlength="2000" placeholder="Type here…"></textarea></label>
+      <label class="field"><span>Email or phone <span style="font-weight:500;color:var(--sub)">(optional, if you'd like a reply)</span></span><input id="fbContact" type="text" maxlength="200" autocomplete="email" value="${acct.user && acct.user.email ? esc(acct.user.email) : ''}"></label>
+      <input id="fbTrap" class="trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="btn primary wide" data-act="fbsend">Send</button>
+      <p class="gfoot" style="text-align:center">Please don't include passwords or payment details.</p></div>`;
+  }
   if(p === 'about') return `<div class="spage">${pageHead('About Bracket')}
     <div class="group"><div class="gitem col"><span class="t">Bracket is unofficial</span><p>Bracket is a free, unofficial way to browse Michigan pickleball tournaments. It isn't connected to pickleballtournaments.com or Pickleball.com. All tournament info comes from <a href="${PT}" target="_blank" rel="noopener">pickleballtournaments.com</a>, and you always register on their site. Check their page before you sign up, since details can change.</p></div>
     <div class="gitem col"><span class="t">Free, no ads</span><p>Bracket was made by a Michigan player for the local pickleball community. There's nothing to buy and no ads.</p></div>
-    <div class="gitem col"><span class="t">Your privacy</span><p>No account, no sign-in. Your home, rating and saved tournaments stay in this browser and aren't sent anywhere.</p></div></div>
+    <div class="gitem col"><span class="t">Your privacy</span><p>No account needed. Without one, your home, rating and saved tournaments stay in this browser. If you sign in, they're kept in your account so they follow you, and nothing is sold or shared. Settings → Account shows exactly what's saved.</p></div></div>
     <p class="version">Version ${VERSION}</p></div>`;
   if(p === 'help') return `<div class="spage help">${pageHead('How Bracket works')}
     <p class="big-sub">Everything Bracket does, in plain words.</p>
@@ -1377,9 +1421,9 @@ function settingsPage(p){
     <div class="group-l">Fit for you</div>
     <div class="group"><p>When you've set your rating, each tournament shows a <b>Fit for you</b> meter. It looks at whether there are events at your level, where your rating sits in those events (near the top of 3.0–3.5 is easier than near the bottom), how many teams have signed up, and whether those events are already full.</p><p>It can't see your match history, wins or partners, so treat it as a starting point. You can turn it off in Settings.</p></div>
     <div class="group-l">Sharing and your calendar</div>
-    <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li><li><b>Find a partner</b> opens pickleballtournaments.com's list of players looking for a partner in that tournament.</li></ul></div>
+    <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
-    <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Accounts that keep them on all your devices are planned.</p></div>
+    <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
     <div class="group"><ul><li>Add Bracket to your Home Screen: Settings → Add to Home Screen shows how. It opens like an app.</li><li>Text too small? Settings → Appearance → Text size.</li><li>No need to refresh. Bracket updates by itself, and the ↻ button at the top checks right away.</li></ul></div>
   </div>`;
@@ -1455,7 +1499,6 @@ function detailBody(t){
     h += `<div class="actions">
       <button class="act" data-act="share" data-slug="${esc(slug)}">${icon('share')}Share</button>
       <button class="act" data-act="addcal" data-slug="${esc(slug)}">${icon('calplus')}Add to calendar</button>
-      <a class="act" href="${PT}/tournaments/${encodeURIComponent(slug)}/events?needAPartner=true" target="_blank" rel="noopener">${icon('people')}Find a partner</a>
     </div>`;
   }
   if(err === 'gone'){
@@ -1702,8 +1745,190 @@ async function loadConfig(){
       let done = false; try { done = !!sessionStorage.getItem(k); sessionStorage.setItem(k, '1'); } catch(e){ done = true; }
       if(!done){ location.reload(); return; }
     }
+    initAuth(j);
     if(ui.tab === 'settings' && !ui.spage) renderSettings();
   } catch(e){}
+}
+
+/* ---------------- Accounts + sync (Supabase, Google sign-in) ----------------
+   Signed out: everything stays in this browser, like before.
+   First sign-in on a device: this phone's saves merge into the account (the phone's copy wins on a tie).
+   After that the account is the source of truth: each change is pushed right away, and the app
+   pulls the latest when it opens or you come back to it. Rows are protected by Row Level Security. */
+const SB_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+let sb = null;
+const acct = { ready: false, session: null, user: null, syncing: false, lastSync: 0, error: null, mirror: null, timer: null, profTimer: null, profSent: null };
+const GOOGLE_G = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.5 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6c1.9-5.6 7.1-9.8 13.6-9.8z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.5 0-11.7-4.2-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+function loadScript(src){
+  return new Promise((ok, bad) => { const el = document.createElement('script'); el.src = src; el.async = true; el.onload = ok; el.onerror = () => bad(new Error('load ' + src)); document.head.appendChild(el); });
+}
+async function initAuth(cfg){
+  if(sb || !cfg || !cfg.supabase) return;
+  try {
+    if(!window.supabase) await loadScript(SB_CDN);
+    sb = window.supabase.createClient(cfg.supabase.url, cfg.supabase.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'bracket_auth' } });
+    const { data } = await sb.auth.getSession();
+    setSession(data && data.session);
+    sb.auth.onAuthStateChange((ev, session) => {
+      const before = acct.user && acct.user.id;
+      setSession(session);
+      if(session && before !== session.user.id) pullSync();
+      if(ev === 'SIGNED_OUT') acct.mirror = null;
+      renderAuthBits();
+    });
+    acct.ready = true;
+    if(/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); // tidy the address after Google
+    renderAuthBits();
+    if(acct.user) pullSync();
+  } catch(e){
+    acct.ready = true; acct.error = 'Sign-in isn’t available right now.'; renderAuthBits();
+  }
+}
+function setSession(session){ acct.session = session || null; acct.user = session ? session.user : null; }
+const acctName = () => { const u = acct.user; if(!u) return ''; const m = u.user_metadata || {}; return m.full_name || m.name || u.email || 'You'; };
+const acctPic = () => { const m = (acct.user && acct.user.user_metadata) || {}; return /^https:\/\//.test(m.avatar_url || m.picture || '') ? (m.avatar_url || m.picture) : ''; };
+function avatarHTML(){ const pic = acctPic(); return `<span class="avatar">${pic ? `<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer">` : esc((acctName()[0] || '?').toUpperCase())}</span>`; }
+function syncText(){
+  if(acct.syncing) return 'Syncing…';
+  if(acct.error) return acct.error;
+  return acct.lastSync ? 'Synced ' + relAgo(acct.lastSync) : 'Synced';
+}
+function renderSyncLine(){
+  document.querySelectorAll('[data-syncline]').forEach(el => { el.innerHTML = `<i class="${acct.error ? 'err' : ''}"></i>${esc(syncText())}`; });
+}
+function updateMineSub(){ const el = $('#mineSub'); if(el) el.textContent = acct.user ? 'Synced to your account (' + (acct.user.email || 'signed in') + ').' : 'Tournaments you saved, on this phone.'; }
+function renderAuthBits(){ updateMineSub(); if(ui.tab === 'settings') renderSettings(); renderSyncLine(); }
+
+async function signIn(){
+  if(!sb){ toast(ui.config && ui.config.supabase ? 'Sign-in is still loading. Try again in a second.' : 'Sign-in isn’t set up yet.'); return; }
+  try { sessionStorage.setItem('bracket_restore', JSON.stringify({ tab: 'settings', spage: 'account' })); } catch(e){}
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/' } });
+  if(error) toast('Couldn’t start Google sign-in. Please try again.');
+}
+async function signOut(){
+  if(!sb) return;
+  S.syncedUser = null; S.syncDirty = false; save(LS.settings, S);
+  try { await sb.auth.signOut(); } catch(e){}
+  setSession(null); acct.mirror = null; acct.lastSync = 0;
+  toast('Signed out. Your saves are still on this phone.');
+  renderAuthBits();
+}
+async function deleteAccount(){
+  if(!acct.session) return;
+  if(!confirm('Delete your Bracket account? Everything synced to it is erased. This phone keeps its own copy of your saves.')) return;
+  try {
+    const r = await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + acct.session.access_token }, body: JSON.stringify({ action: 'delete' }) });
+    const j = await r.json().catch(() => ({}));
+    if(!r.ok){ toast(j.error || 'Couldn’t delete the account right now.'); return; }
+  } catch(e){ toast('Couldn’t reach Bracket. Check your connection.'); return; }
+  S.syncedUser = null; S.syncDirty = false; save(LS.settings, S);
+  try { await sb.auth.signOut(); } catch(e){}
+  setSession(null); acct.mirror = null;
+  ui.spage = null; renderAuthBits();
+  toast('Your account was deleted.');
+}
+function localMap(){
+  const m = {};
+  ['interested', 'registered'].forEach(k => Object.keys(SAVES[k]).forEach(sl => { m[k + '|' + sl] = JSON.stringify(SAVES[k][sl]); }));
+  return m;
+}
+async function pullSync(){
+  if(!sb || !acct.user || acct.syncing) return;
+  acct.syncing = true; acct.error = null; renderSyncLine();
+  const uid = acct.user.id;
+  try {
+    const [sv, pf] = await Promise.all([
+      sb.from('bracket_saves').select('kind,slug,snap'),
+      sb.from('bracket_profile').select('rating,home,fit').eq('user_id', uid).maybeSingle()
+    ]);
+    if(sv.error) throw sv.error;
+    if(pf.error) throw pf.error;
+    const remote = { interested: {}, registered: {} };
+    (sv.data || []).forEach(r => { if(remote[r.kind]) remote[r.kind][r.slug] = r.snap || {}; });
+    acct.mirror = {};
+    ['interested', 'registered'].forEach(k => Object.keys(remote[k]).forEach(sl => { acct.mirror[k + '|' + sl] = JSON.stringify(remote[k][sl]); }));
+    const first = S.syncedUser !== uid || S.syncDirty;
+    if(first) SAVES = { interested: Object.assign({}, remote.interested, SAVES.interested), registered: Object.assign({}, remote.registered, SAVES.registered) };
+    else SAVES = remote;
+    save(LS.saves, SAVES);
+    const p = pf.data;
+    if(p){
+      if(first){ if(S.rating == null && p.rating != null) S.rating = +p.rating; if(!S.home && p.home) S.home = p.home; }
+      else { S.rating = p.rating != null ? +p.rating : null; S.home = p.home || null; if(p.fit != null) S.fit = p.fit; }
+    }
+    S.syncedUser = uid; S.syncDirty = false; save(LS.settings, S);
+    acct.profSent = p ? JSON.stringify({ rating: p.rating != null ? +p.rating : null, home: p.home || null, fit: p.fit }) : null;
+    acct.syncing = false;
+    await pushSaves();
+    await pushProfile();
+    acct.lastSync = Date.now();
+    if(first && (sv.data || []).length) toast('Signed in. Your saved tournaments are synced.');
+    else if(first) toast('Signed in. Your saves will follow you now.');
+  } catch(e){
+    acct.error = 'Couldn’t sync right now.';
+  } finally {
+    acct.syncing = false;
+    afterSaveChange();
+    renderSyncLine();
+    if(ui.tab === 'browse') renderBrowse();
+  }
+}
+function scheduleSync(){
+  if(!sb || !acct.user || !acct.mirror) return;
+  clearTimeout(acct.timer);
+  acct.timer = setTimeout(pushSaves, 400);
+}
+async function pushSaves(){
+  if(!sb || !acct.user || !acct.mirror || acct.syncing) return;
+  const uid = acct.user.id, local = localMap(), ups = [], dels = { interested: [], registered: [] };
+  Object.keys(local).forEach(k => { if(acct.mirror[k] !== local[k]){ const [kind, slug] = k.split('|'); ups.push({ user_id: uid, kind, slug, snap: JSON.parse(local[k]), updated_at: new Date().toISOString() }); } });
+  Object.keys(acct.mirror).forEach(k => { if(!(k in local)){ const [kind, slug] = k.split('|'); dels[kind].push(slug); } });
+  if(!ups.length && !dels.interested.length && !dels.registered.length) return;
+  try {
+    if(ups.length){ const { error } = await sb.from('bracket_saves').upsert(ups, { onConflict: 'user_id,kind,slug' }); if(error) throw error; }
+    for(const kind of ['interested', 'registered']){
+      if(dels[kind].length){ const { error } = await sb.from('bracket_saves').delete().eq('user_id', uid).eq('kind', kind).in('slug', dels[kind]); if(error) throw error; }
+    }
+    acct.mirror = local; acct.lastSync = Date.now(); acct.error = null;
+  } catch(e){
+    S.syncDirty = true; save(LS.settings, S);
+    acct.error = 'Couldn’t sync. Will try again.';
+  }
+  renderSyncLine();
+}
+function scheduleProfile(){
+  if(!sb || !acct.user || acct.syncing) return;
+  clearTimeout(acct.profTimer);
+  acct.profTimer = setTimeout(pushProfile, 600);
+}
+async function pushProfile(){
+  if(!sb || !acct.user) return;
+  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false };
+  const key = JSON.stringify(body);
+  if(key === acct.profSent) return;
+  try {
+    const { error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, body), { onConflict: 'user_id' });
+    if(error) throw error;
+    acct.profSent = key;
+  } catch(e){ acct.error = 'Couldn’t sync your rating and home.'; renderSyncLine(); }
+}
+
+/* ---------------- Feedback ---------------- */
+const FB_KINDS = [['idea', 'Idea'], ['problem', 'Problem'], ['missing', 'Missing tournament'], ['other', 'Other']];
+async function sendFeedback(btn){
+  const msg = $('#fbMsg').value.trim();
+  if(msg.length < 3){ toast('Please write a little more.'); $('#fbMsg').focus(); return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: ui.fb.kind, message: msg, contact: $('#fbContact').value.trim(), website: $('#fbTrap').value, version: VERSION }) });
+    const j = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(j.error || 'Couldn’t send that right now.');
+    ui.fb = { kind: 'idea', sent: true };
+    renderSettings(); window.scrollTo(0, 0);
+  } catch(e){
+    toast(e.message || 'Couldn’t send that right now.');
+    btn.disabled = false; btn.textContent = 'Send';
+  }
 }
 
 /* ---------------- Sheets ---------------- */
@@ -2077,6 +2302,15 @@ document.addEventListener('click', e => {
     case 'share-app': shareApp(); break;
     case 'addcal': openAddCal(slug); break;
     case 'install': openInstall(); break;
+    case 'signin': signIn(); break;
+    case 'signout': signOut(); break;
+    case 'del-account': deleteAccount(); break;
+    case 'sync-now': pullSync(); break;
+    case 'sp-account': openSPage('account'); break;
+    case 'sp-feedback': ui.fb = { kind: 'idea' }; openSPage('feedback'); break;
+    case 'fb-again': ui.fb = { kind: 'idea' }; renderSettings(); break;
+    case 'fbkind': ui.fb.kind = el.dataset.v; document.querySelectorAll('[data-act="fbkind"]').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
+    case 'fbsend': sendFeedback(el); break;
     case 'undo': if(toastUndo){ const u = toastUndo; toastUndo = null; u(); $('#toast').classList.remove('show'); } break;
   }
 });
@@ -2097,9 +2331,10 @@ function onSeg(name, v){
   else if(name === 'mode'){
     const was = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
     S.mode = v; saveSettings(); window.BracketLooks(v, S.size);
+    // iPhone only reads the status-bar colors when the app opens, so the clock/battery
+    // colors catch up next time. (bracket-1 to -3 reloaded here, which jumped back to Browse.)
     const now = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
-    const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-    if(standalone && was !== now) setTimeout(() => location.reload(), 350); // iOS only reads the status bar style on load
+    if(isStandalone() && was !== now) toast('The time and battery at the top will match next time you open Bracket.');
   }
 }
 document.addEventListener('change', e => {
@@ -2177,6 +2412,7 @@ if(window.matchMedia){
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState !== 'visible') return;
   loadConfig();
+  if(acct.user && Date.now() - acct.lastSync > 60000) pullSync();
   if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
 });
 
@@ -2196,6 +2432,12 @@ document.addEventListener('visibilitychange', () => {
     openTournament(m[1]);
   } else if(!S.onboarded) showWelcome();
   else maybeAutoInstall();
+  // Coming back from Google sign-in: return to the Account page
+  try {
+    const back = JSON.parse(sessionStorage.getItem('bracket_restore') || 'null');
+    sessionStorage.removeItem('bracket_restore');
+    if(back && back.tab && /[?&]code=/.test(location.search)){ setTab(back.tab); if(back.spage) openSPage(back.spage); }
+  } catch(e){}
   loadConfig();
 })();
 </script>

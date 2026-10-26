@@ -10,7 +10,10 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 - `api/_lib/pt.js`: pickleballtournaments.com helpers (finds the site's search action by name, parses tournament pages). Copied from Rally's rally-4 engine, not shared with it.
 - `api/share.js`: `/t/<slug>` share links. Serves index.html with the tournament's name, dates and city in the link-preview tags (vercel.json rewrites `/t/:slug` here and bundles index.html with it).
 - `api/ics.js`: calendar file for one tournament (`?slug=`), all-day event(s).
-- `api/config.js`: app version (old home-screen copies reload once) and the feedback link.
+- `api/config.js`: app version (old home-screen copies reload once), the Supabase URL + publishable key for sign-in, and whether feedback is on.
+- `api/feedback.js`: Settings → Send feedback. Saves to the `bracket_feedback` table (read it in Supabase → Table Editor).
+- `api/account.js`: deletes a signed-in person's account (their saves go with it).
+- `api/_lib/sb.js`: small Supabase helpers for the server (plain fetch, no packages).
 - `api/_lib/find.js`: shared helpers for those routes, and `APP_VERSION`. **Bump it together with `VERSION` in index.html every build.**
 - `og.png`: the link-preview picture (1200×630).
 - `vercel.json`: time limits, the `/t/:slug` rewrite, and `noindex` on every page so Bracket stays out of search results.
@@ -27,8 +30,13 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 ## Analytics
 Vercel Web Analytics script is in index.html; turn it on in Vercel → the project → Analytics.
 
+## Accounts (Supabase project "bracket")
+Google sign-in through Supabase Auth. Tables `bracket_saves`, `bracket_profile`, `bracket_feedback` with Row Level Security (SQL in the build zip's `Supabase - run in SQL Editor` folder). Signed out, everything stays in the browser; first sign-in on a device merges that device's saves into the account.
+
 ## Vercel env vars
-- `FEEDBACK_URL` (optional): link to the Google Form for "Send feedback" in Settings. Hidden when not set.
+- `SUPABASE_URL`: the Bracket Supabase project URL
+- `SUPABASE_PUBLISHABLE_KEY`: publishable key (sent to the browser; safe because of Row Level Security)
+- `SUPABASE_SECRET_KEY`: secret key (server only: feedback + delete account). Never put this in the app or GitHub.
 - `PT_ACTION_ID` (optional, normally unset): pins pickleballtournaments.com's search action id by hand if finding it automatically ever breaks.
 
 Env var changes need a Redeploy.
