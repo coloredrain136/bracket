@@ -8,7 +8,12 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 - `api/tournaments.js`: upcoming Michigan tournaments (cached 30 min at Vercel's edge; add `?debug=1` to see how the fetch went)
 - `api/tournament.js`: one tournament's details + events (`?slug=midwest-open`)
 - `api/_lib/pt.js`: pickleballtournaments.com helpers (finds the site's search action by name, parses tournament pages). Copied from Rally's rally-4 engine, not shared with it.
-- `vercel.json`: time limits for the tournament routes, and `noindex` on every page so Bracket stays out of search results.
+- `api/share.js`: `/t/<slug>` share links. Serves index.html with the tournament's name, dates and city in the link-preview tags (vercel.json rewrites `/t/:slug` here and bundles index.html with it).
+- `api/ics.js`: calendar file for one tournament (`?slug=`), all-day event(s).
+- `api/config.js`: app version (old home-screen copies reload once) and the feedback link.
+- `api/_lib/find.js`: shared helpers for those routes, and `APP_VERSION`. **Bump it together with `VERSION` in index.html every build.**
+- `og.png`: the link-preview picture (1200×630).
+- `vercel.json`: time limits, the `/t/:slug` rewrite, and `noindex` on every page so Bracket stays out of search results.
 
 ## On each phone (localStorage)
 - `bracket_settings`: home location, rating, Fit for you on/off, List or Calendar, filters (incl. weekend / dates, level fit / up), looks, text size, Mine tab
@@ -17,10 +22,13 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 - `bracket_details`: last 30 tournament details
 
 ## Links
-- `/?t=<slug>` opens Bracket straight to a tournament.
+- `/t/<slug>` (or `/?t=<slug>`) opens Bracket straight to a tournament.
+
+## Analytics
+Vercel Web Analytics script is in index.html; turn it on in Vercel → the project → Analytics.
 
 ## Vercel env vars
-None needed.
+- `FEEDBACK_URL` (optional): link to the Google Form for "Send feedback" in Settings. Hidden when not set.
 - `PT_ACTION_ID` (optional, normally unset): pins pickleballtournaments.com's search action id by hand if finding it automatically ever breaks.
 
 Env var changes need a Redeploy.

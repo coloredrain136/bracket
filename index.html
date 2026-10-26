@@ -6,6 +6,14 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Bracket · Michigan pickleball tournaments</title>
 <meta name="description" content="A free, unofficial way to browse Michigan pickleball tournaments. Data from pickleballtournaments.com.">
+<!--OG-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bracket">
+<meta property="og:title" content="Bracket · Michigan pickleball tournaments">
+<meta property="og:description" content="A free, easy way to browse Michigan pickleball tournaments.">
+<meta property="og:image" content="/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<!--/OG-->
 <meta name="theme-color" content="#07120c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,6 +23,9 @@
 <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- Vercel Web Analytics (no cookies). Turn on in Vercel → Analytics; until then this quietly does nothing. -->
+<script>window.va = window.va || function(){ (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <script>
 /* Looks before first paint: light / dark / auto, text size, theme-color and the iPhone status bar style */
 (function(){
@@ -229,6 +240,23 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .star[aria-pressed="true"]{ color:#FFCC00; }
 .star[aria-pressed="true"] svg{ fill:#FFCC00; stroke:#e0b000; }
 .star:active svg{ transform:scale(.85); }
+.chg{ display:flex; align-items:flex-start; gap:8px; margin:0 0 8px; padding:8px 10px; border-radius:10px; background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); font-weight:600; }
+.chg::before{ content:""; width:8px; height:8px; border-radius:50%; background:#ff9f0a; margin-top:6px; flex:none; }
+.card .body > .chg{ margin-right:38px; }
+.card .newdot{ position:absolute; top:14px; left:10px; width:10px; height:10px; border-radius:50%; background:#ff9f0a; box-shadow:0 0 0 3px var(--bg); }
+.mine-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 2px 0; padding:12px 14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); font-weight:600; }
+.mine-bar button{ color:inherit; font-weight:800; text-decoration:underline; white-space:nowrap; }
+.actions{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
+.act{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 4px 10px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-xs); font-weight:700; color:var(--text); text-align:center; }
+.act svg{ width:22px; height:22px; color:var(--accent-text); }
+.steps{ list-style:none; margin:4px 0 0; padding:0; counter-reset:st; }
+.steps li{ display:flex; gap:14px; align-items:center; padding:14px 0; border-top:1px solid var(--line); font-size:var(--t-md); }
+.steps li:first-child{ border-top:0; }
+.steps .num{ width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font:800 17px var(--display); display:grid; place-items:center; flex:none; }
+.steps .ic{ display:inline-grid; place-items:center; width:34px; height:34px; border-radius:9px; background:var(--seg-bg); vertical-align:middle; margin:0 3px; color:#0a84ff; }
+html[data-mode="dark"] .steps .ic{ color:#4ea8ff; }
+.steps .ic svg{ width:20px; height:20px; }
+.steps b{ font-weight:800; }
 .end-note{ margin:28px 8px 8px; text-align:center; font-size:var(--t-xs); color:var(--faint); line-height:1.5; }
 
 .empty{ text-align:center; padding:44px 22px; color:var(--sub); }
@@ -291,7 +319,7 @@ html[data-mode="light"] #tabs .thumb{ box-shadow:0 2px 8px rgba(20,60,35,.12); }
 .tab{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11.5px; font-weight:700; color:var(--sub); border-radius:var(--r-pill); transition:color var(--fast); }
 .tab svg{ width:24px; height:24px; }
 .tab[aria-current="true"]{ color:var(--accent-text); }
-.tab .badge{ position:absolute; top:5px; left:calc(50% + 7px); min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:800; display:grid; place-items:center; }
+.tab .badge{ position:absolute; top:5px; left:calc(50% + 7px); min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:#ff9f0a; color:#2b1a00; font-size:11.5px; font-weight:800; display:grid; place-items:center; }
 
 /* ============ Segmented, switches, sliders, selects ============ */
 .seg{ position:relative; display:grid; grid-template-columns:repeat(var(--n), minmax(0,1fr)); padding:3px; border-radius:12px; background:var(--seg-bg); }
@@ -320,7 +348,26 @@ input[type=range]:disabled{ opacity:.4; }
 .selwrap svg{ position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(90deg); color:var(--sub); pointer-events:none; }
 .datein{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .datein label{ font-size:var(--t-xs); font-weight:700; color:var(--sub); display:flex; flex-direction:column; gap:5px; }
-.datein input{ height:46px; border-radius:12px; border:0; background:var(--seg-bg); padding:0 12px; font-size:16px; font-weight:600; width:100%; min-width:0; }
+.datein label{ min-width:0; }
+/* iOS date fields are wider than their box unless told otherwise (that caused the sideways drag) */
+.datein input{ -webkit-appearance:none; appearance:none; display:block; box-sizing:border-box; height:48px; line-height:48px; border-radius:12px; border:0; background:var(--seg-bg); padding:0 12px; font-size:16px; font-weight:600; width:100%; min-width:0; max-width:100%; }
+.datein input::-webkit-date-and-time-value{ text-align:left; }
+/* Filter options: iPhone-style rows with a checkmark */
+.opt{ display:flex; align-items:center; gap:12px; width:100%; min-height:52px; padding:10px 16px; text-align:left; position:relative; }
+.opt + .opt::before, .group > .opt + .expand::before, .expand + .opt::before{ content:""; position:absolute; top:0; left:16px; right:0; height:1px; background:var(--line); }
+.opt .t{ flex:1; min-width:0; font-weight:600; font-size:var(--t-md); }
+.opt .t small{ display:block; font-weight:500; font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
+.opt .n{ font-size:var(--t-sm); color:var(--sub); flex:none; }
+.opt .ck{ width:22px; height:22px; flex:none; color:var(--accent-text); visibility:hidden; }
+.opt .ck svg{ width:22px; height:22px; stroke-width:2.6; }
+.opt[aria-pressed="true"] .ck{ visibility:visible; }
+.opt[aria-pressed="true"] .t{ color:var(--accent-text); }
+.opt .chev{ width:16px; height:16px; color:var(--faint); transition:transform var(--fast); }
+.opt[aria-expanded="true"] .chev{ transform:rotate(90deg); }
+.expand{ padding:2px 16px 14px; position:relative; }
+.fsec{ margin:0 0 6px; }
+.fsec .group-l{ margin-top:20px; }
+.gpad{ padding:14px 16px; }
 
 /* ============ Sheets ============ */
 .scrim{ position:fixed; inset:0; z-index:60; background:var(--scrim); opacity:0; transition:opacity var(--mid) var(--ease); }
@@ -332,7 +379,8 @@ input[type=range]:disabled{ opacity:.4; }
 .grab{ width:38px; height:5px; border-radius:3px; background:var(--seg-empty); margin:0 auto 6px; }
 .sheet-title{ display:flex; align-items:center; gap:10px; min-height:40px; }
 .sheet-title h2{ flex:1; margin:0; font:800 var(--t-xl)/1.1 var(--display); letter-spacing:-.01em; }
-.sheet-body{ flex:1; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:4px 16px 20px; }
+.sheet-body{ flex:1; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:4px 16px 20px; }
+.sheet{ overflow:hidden; touch-action:pan-y; }
 .sheet-foot{ flex:none; padding:12px 16px calc(12px + var(--sab)); border-top:1px solid var(--line); display:flex; gap:10px; align-items:center; background:var(--sheet); }
 .close{ width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:var(--seg-bg); color:var(--sub); flex:none; }
 .close svg{ width:17px; height:17px; stroke-width:2.4; }
@@ -345,8 +393,8 @@ input[type=range]:disabled{ opacity:.4; }
 .row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:2px; }
 .row .t{ font-weight:700; }
 .row .s{ font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
-.wkgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
-.wk{ text-align:left; padding:10px 12px; border-radius:var(--r-md); background:var(--seg-bg); }
+.wkgrid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-top:4px; }
+.wk{ text-align:left; padding:10px 12px; border-radius:var(--r-md); background:var(--seg-bg); min-width:0; }
 .wk small{ display:block; font-size:11.5px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.05em; }
 .wk b{ display:block; font:800 16px/1.25 var(--display); margin-top:2px; }
 .wk span{ display:block; font-size:12px; color:var(--sub); margin-top:2px; }
@@ -537,6 +585,12 @@ input[type=range]:disabled{ opacity:.4; }
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v6M12 7.5v.5"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M7 10.5H5.5v10h13v-10H17"/></symbol>
+    <symbol id="i-calplus" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.6c2.6-.2 4.8 1.2 5.5 4.4"/></symbol>
+    <symbol id="i-plussq" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5z"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -594,7 +648,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-2';
+const VERSION = 'bracket-3';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -641,7 +695,7 @@ if(S.filters.when === '30' || S.filters.when === '90' || S.filters.when === 'any
 let SAVES = Object.assign({ interested: {}, registered: {} }, load(LS.saves, {}));
 let LIST = load(LS.list, null);          // { fetchedAt, savedAt, items }
 let DET = load(LS.details, {});          // { slug: { at, data } }
-const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, spage: null, calMonth: null, calDay: null };
+const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, spage: null, calMonth: null, calDay: null, fx: {}, config: null };
 
 function saveSettings(){ save(LS.settings, S); }
 function saveSaves(){ save(LS.saves, SAVES); }
@@ -863,6 +917,38 @@ function findT(slug){
   return { slug, title: 'Tournament', startDay: '', endDay: '', city: '', placeholder: true };
 }
 
+/* ---------------- Changes since you looked ----------------
+   For saved tournaments only: compare what you last saw (the saved snapshot) with today's list.
+   Opening the tournament marks it seen. Player counts change all the time, so they don't count. */
+function savedSnap(slug){ return SAVES.registered[slug] || SAVES.interested[slug] || null; }
+function changesFor(slug){
+  const s = savedSnap(slug);
+  if(!s || !LIST || !LIST.items || isPast(s)) return [];
+  const t = LIST.items.find(x => x.slug === slug);
+  const out = [];
+  if(!t){
+    if(s.startDay > todayStr() && !ui.error) out.push('No longer listed on pickleballtournaments.com. It may be canceled.');
+    return out;
+  }
+  if(t.price != null && s.price != null && Math.round(t.price) !== Math.round(s.price)) out.push(t.price > s.price ? `Price went up to $${Math.round(t.price)}` : `Price dropped to $${Math.round(t.price)}`);
+  if(t.startDay !== s.startDay || (t.endDay || t.startDay) !== (s.endDay || s.startDay)) out.push(`Dates changed to ${fmtSpan(t.startDay, t.endDay)}`);
+  if(!!t.regClosed !== !!s.regClosed) out.push(t.regClosed ? 'Registration closed' : 'Registration is open again');
+  return out;
+}
+function markSeen(slug){
+  const t = LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : null;
+  if(!t) return;
+  ['interested', 'registered'].forEach(k => {
+    const s = SAVES[k][slug];
+    if(s) Object.assign(s, { title: t.title, startDay: t.startDay, endDay: t.endDay, city: t.city, location: t.location, lat: t.lat, lng: t.lng, price: t.price, costPerEvent: !!t.costPerEvent, free: !!t.free, prize: !!t.prize, players: t.players || 0, regClosed: !!t.regClosed, seenAt: Date.now() });
+  });
+  saveSaves();
+}
+function changedSlugs(){
+  const slugs = new Set(Object.keys(SAVES.interested).concat(Object.keys(SAVES.registered)));
+  return [...slugs].filter(sl => changesFor(sl).length);
+}
+
 /* ---------------- When: weekends + dates ---------------- */
 // Saturdays of this weekend and the next n-1 weekends
 function weekends(n){
@@ -981,9 +1067,11 @@ function card(t){
   const lv = levelInfo(t);
   const fm = t.ev && t.ev.formats && t.ev.formats.length ? t.ev.formats.join(' · ') + (t.ev.n ? ` · ${pl(t.ev.n, 'event')}` : '') : '';
   const price = priceText(t);
+  const ch = savedSnap(t.slug) ? changesFor(t.slug) : [];
   return `<div class="card${ui.openSlug === t.slug && isWide() ? ' sel' : ''}" role="button" tabindex="0" data-act="open" data-slug="${esc(t.slug)}">
-    ${dateBlock(t)}
+    ${ch.length ? '<span class="newdot" aria-label="Updated"></span>' : ''}${dateBlock(t)}
     <div class="body">
+      ${ch.map(c => `<div class="chg">${esc(c)}</div>`).join('')}
       <div class="kick">${esc(t.city || '')}${d != null ? `<span class="dot"></span>${distText(d)}` : ''}</div>
       <h3>${esc(t.title)}</h3>
       <div class="tags"><span class="tag ${st.k}">${esc(st.txt)}</span>${t.prize ? '<span class="tag prize">$ Prize money</span>' : ''}</div>
@@ -1013,7 +1101,7 @@ function renderRefresh(){
   const b = $('#refreshBtn');
   if(b) b.classList.toggle('spin', ui.loading);
 }
-function levelChipLabel(){ return S.filters.level === 'up' ? `Level ${rt(S.rating)} + up` : `Level ${rt(S.rating)}`; }
+function levelChipLabel(){ const mr = myRanges(S.rating); return S.filters.level === 'up' ? `Level ${mr.mine} + ${mr.up}` : `Level ${mr.mine}`; }
 function renderChips(){
   const f = S.filters, n = activeFilterCount();
   const chips = [`<button class="chip glass${n ? ' on' : ''}" data-act="filters">${icon('filter')}Filters${n ? `<span class="n">${n}</span>` : ''}</button>`];
@@ -1026,7 +1114,7 @@ function renderChips(){
   if(f.openOnly) add('openOnly', 'Open to register');
   if(!n){
     chips.push(`<button class="chip glass" data-act="quick" data-k="wk">This weekend</button>`);
-    if(S.rating != null) chips.push(`<button class="chip glass" data-act="quick" data-k="level">My level (${rt(S.rating)})</button>`);
+    if(S.rating != null) chips.push(`<button class="chip glass" data-act="quick" data-k="level">My level (${myRanges(S.rating).mine})</button>`);
     chips.push(`<button class="chip glass" data-act="quick" data-k="open">Open to register</button>`);
   }
   $('#chips').innerHTML = chips.join('');
@@ -1153,7 +1241,8 @@ function renderMine(noWarm){
     el.innerHTML = `<div class="empty"><div class="ico">${icon(msg[2])}</div><h3>${msg[0]}</h3><p>${msg[1]}</p>${S.mineTab === 'interested' ? '<button class="btn ghost" data-act="tab" data-tab="browse">Browse tournaments</button>' : ''}</div>`;
     return;
   }
-  el.innerHTML = groupByMonth(items);
+  const ch = changedSlugs();
+  el.innerHTML = (ch.length ? `<div class="mine-bar"><span>${ch.length === 1 ? '1 saved tournament changed. Open it to see what changed.' : ch.length + ' saved tournaments changed. Open one to see what changed.'}</span><button data-act="seen-all">Mark all seen</button></div>` : '') + groupByMonth(items);
   if(!noWarm) warmSaved();
 }
 // Load details for saved upcoming tournaments (a few at a time) so "Closes soon" / "Opens" show in Mine
@@ -1165,9 +1254,9 @@ function warmSaved(){
   const todo = b.interested.concat(b.registered).filter(t => !DET[t.slug] || Date.now() - DET[t.slug].at > DETAIL_MAX_AGE).slice(0, 8);
   (async () => { for(const t of todo){ await loadDetail(t.slug); } })();
 }
+// The Mine badge only shows when a saved tournament changed since you last looked
 function renderBadge(){
-  const b = mineBuckets();
-  const n = b.interested.length + b.registered.length;
+  const n = changedSlugs().length;
   const el = $('#mineBadge');
   el.hidden = !n; el.textContent = n;
 }
@@ -1208,7 +1297,13 @@ function renderSettings(){
     <div class="group-l">Help</div>
     <div class="group">
       ${row('sp-help', 'book', 'yellow', 'How Bracket works')}
+      ${row('install', 'phone', 'green', 'Add to Home Screen', null, 'Use Bracket like an app')}
       ${row('sp-about', 'info', 'gray', 'About Bracket')}
+    </div>
+    <div class="group-l">Spread the word</div>
+    <div class="group">
+      ${row('share-app', 'share', 'blue', 'Share Bracket', null, 'Send it to your partner or club')}
+      ${ui.config && ui.config.feedback ? `<a class="gitem" href="${esc(ui.config.feedback)}" target="_blank" rel="noopener">${tile('chat', 'teal')}<span class="t">Send feedback<small>Ideas, problems, a missing tournament</small></span><svg class="i chev"><use href="#i-chev"/></svg></a>` : ''}
     </div>
     <div class="group-l">Your data</div>
     <div class="group">${row('sp-data', 'box', 'red', 'Saved on this phone', `${b.interested.length + b.registered.length + b.history.length}`)}</div>
@@ -1275,16 +1370,18 @@ function settingsPage(p){
       <div class="demo-row"><span class="tag prize">$ Prize money</span>Winners get paid.</div>
       <p style="margin-top:8px">“Closes” and “Opens” show once Bracket has loaded that tournament's details (open it once, or save it).</p></div>
     <div class="group-l">Levels and your rating</div>
-    <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
+    <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Bracket always shows levels as a range. A “3.5” event means 3.5–3.99. Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
       <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
     <div class="group-l">Quality meter</div>
     <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
     <div class="group-l">Fit for you</div>
     <div class="group"><p>When you've set your rating, each tournament shows a <b>Fit for you</b> meter. It looks at whether there are events at your level, where your rating sits in those events (near the top of 3.0–3.5 is easier than near the bottom), how many teams have signed up, and whether those events are already full.</p><p>It can't see your match history, wins or partners, so treat it as a starting point. You can turn it off in Settings.</p></div>
+    <div class="group-l">Sharing and your calendar</div>
+    <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li><li><b>Find a partner</b> opens pickleballtournaments.com's list of players looking for a partner in that tournament.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
-    <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li></ul><p>Saves stay on this phone. Accounts that keep them on all your devices are planned.</p></div>
+    <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Accounts that keep them on all your devices are planned.</p></div>
     <div class="group-l">Tips</div>
-    <div class="group"><ul><li>Add Bracket to your Home Screen: in Safari, tap Share, then “Add to Home Screen”. It opens like an app.</li><li>Text too small? Settings → Appearance → Text size.</li><li>No need to refresh. Bracket updates by itself, and the ↻ button at the top checks right away.</li></ul></div>
+    <div class="group"><ul><li>Add Bracket to your Home Screen: Settings → Add to Home Screen shows how. It opens like an app.</li><li>Text too small? Settings → Appearance → Text size.</li><li>No need to refresh. Bracket updates by itself, and the ↻ button at the top checks right away.</li></ul></div>
   </div>`;
   return '';
 }
@@ -1302,12 +1399,21 @@ function cleanText(s){
 }
 function moneyNum(s){ const m = /\$\s*([\d,]+(?:\.\d+)?)/.exec(String(s || '')); return m ? parseFloat(m[1].replace(/,/g, '')) : null; }
 function evName(e){ const n = String(e.title || '').split(':')[0].trim(); return n || [e.players, e.format].filter(Boolean).join(' '); }
-function evSkill(s){
-  s = String(s || '').trim();
-  if(!s) return '';
-  if(/^open/i.test(s)) return 'Open';
-  return s.replace(/\s*to\s*/i, '–').replace(/\s*and\s*(above|up|over)/i, '+').replace(/\s*and\s*(below|under)/i, ' and under');
+// Always show a level as a range: "3.5" → "3.5–3.99", "3.0 To 3.5" → "3.0–3.5", "4.5 And Above" → "4.5 and up"
+const lv = n => (Math.round(n * 100) % 10 ? n.toFixed(2) : n.toFixed(1));
+function rangeText(lo, hi){
+  if(isOpenRange(lo, hi)) return 'Open';
+  if(hi >= 9) return lv(lo) + ' and up';
+  if(lo <= 0) return 'Up to ' + lv(hi);
+  return lv(lo) + '–' + lv(hi);
 }
+function evSkill(s){
+  const r = skillRange(s);
+  if(r) return rangeText(r.lo, r.hi);
+  return String(s || '').trim();
+}
+// Example ranges for your rating: 3.40 → your level "3.0–3.5", one step up "3.5–4.0"
+function myRanges(R){ const lo = Math.floor(R * 2 + 1e-9) / 2; return { mine: lv(lo) + '–' + lv(lo + 0.5), up: lv(lo + 0.5) + '–' + lv(lo + 1) }; }
 function evWhen(e){
   const d = parsePTDate(e.date);
   if(!d) return '';
@@ -1342,6 +1448,16 @@ function detailBody(t){
   const indoor = det.playArea ? (/indoor/i.test(det.playArea) ? 'Indoor' : /outdoor/i.test(det.playArea) ? 'Outdoor' : '') : '';
   h += `<div class="tags"><span class="tag ${st.k}">${esc(st.txt)}</span>${tt.prize ? '<span class="tag prize">$ Prize money</span>' : ''}${indoor ? `<span class="tag info">${indoor}</span>` : ''}</div>`;
 
+  if(ui.openChanges && ui.openChanges.length && ui.openSlug === slug){
+    h += `<div style="margin-top:12px">${ui.openChanges.map(c => `<div class="chg">${esc(c)} <span style="font-weight:500;opacity:.85">(since you last looked)</span></div>`).join('')}</div>`;
+  }
+  if(tt.startDay && !t.placeholder){
+    h += `<div class="actions">
+      <button class="act" data-act="share" data-slug="${esc(slug)}">${icon('share')}Share</button>
+      <button class="act" data-act="addcal" data-slug="${esc(slug)}">${icon('calplus')}Add to calendar</button>
+      <a class="act" href="${PT}/tournaments/${encodeURIComponent(slug)}/events?needAPartner=true" target="_blank" rel="noopener">${icon('people')}Find a partner</a>
+    </div>`;
+  }
   if(err === 'gone'){
     h += `<div class="d-error">This tournament isn't on pickleballtournaments.com anymore. It may have been canceled or renamed.</div>`;
     return h;
@@ -1429,7 +1545,7 @@ function detailBody(t){
     const toggle = R != null && (mineCount + upCount) ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
     h += `<div class="blk"><h3><span>Events <small>${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}</small></span>${toggle}</h3>`;
     [...groups.entries()].sort((a, b) => a[1].lo - b[1].lo || a[1].hi - b[1].hi).forEach(([k, g]) => {
-      const title = k === 'Open' || k === 'Other' ? k : 'Level ' + k;
+      const title = k === 'Open' || k === 'Other' ? k + ' level' : 'Level ' + k;
       h += `<details class="evgroup" open><summary><span>${esc(title)}${g.mine ? '<span class="yl">Your level</span>' : g.up ? '<span class="yl up">Play up</span>' : ''} <small>${g.list.length}</small></span>${icon('chev')}</summary>`;
       g.list.forEach(e => {
         const word = /singles/i.test(e.format) ? 'players' : 'teams';
@@ -1471,6 +1587,8 @@ function detailFoot(t){
 let detailSheet = null;
 function openTournament(slug){
   ui.openSlug = slug; ui.descOpen = false; ui.evMine = true;
+  ui.openChanges = changesFor(slug);
+  if(ui.openChanges.length){ markSeen(slug); renderBadge(); if(ui.tab === 'mine') renderMine(true); else if(ui.tab === 'browse') renderList(); }
   const t = findT(slug);
   if(isWide()){
     renderPanel();
@@ -1480,7 +1598,7 @@ function openTournament(slug){
     if(detailSheet) closeSheet(detailSheet, true);
     detailSheet = openSheet({
       cls: 'tall', title: '', body: detailBody(t), foot: detailFoot(t),
-      onClose: () => { detailSheet = null; ui.openSlug = null; }
+      onClose: () => { detailSheet = null; ui.openSlug = null; if(ui.welcomeLater && !S.onboarded){ ui.welcomeLater = false; setTimeout(showWelcome, 350); } }
     });
   }
   loadDetail(slug);
@@ -1507,6 +1625,85 @@ function renderPanel(){
   }
   const t = findT(ui.openSlug);
   p.innerHTML = `<div class="p-head"><button class="close" data-act="close-panel" aria-label="Close">${icon('x')}</button></div><div class="sheet-body">${detailBody(t)}</div><div class="sheet-foot">${detailFoot(t)}</div>`;
+}
+
+/* ---------------- Share, calendar, Home Screen ---------------- */
+async function shareTo(title, text, url){
+  if(navigator.share){
+    try { await navigator.share({ title, text, url }); } catch(e){}
+    return;
+  }
+  try { await navigator.clipboard.writeText(text + ' ' + url); toast('Link copied. Paste it in a text or post.'); }
+  catch(e){ toast(url); }
+}
+function shareTournament(slug){
+  const t = findT(slug);
+  const text = [t.title, t.startDay ? fmtSpan(t.startDay, t.endDay) : '', t.city].filter(Boolean).join(' · ');
+  shareTo(t.title, text, location.origin + '/t/' + encodeURIComponent(slug));
+}
+function shareApp(){ shareTo('Bracket', 'Bracket: an easy way to find Michigan pickleball tournaments.', location.origin + '/'); }
+function googleCalUrl(t){
+  const d = detailOf(t.slug), det = d && d.detail ? d.detail : {};
+  const where = [det.venue, det.street, det.cityStateZip].filter(Boolean).join(', ') || t.location || '';
+  const p = new URLSearchParams({
+    action: 'TEMPLATE', text: '🏓 ' + t.title,
+    dates: t.startDay.replace(/-/g, '') + '/' + addDays(t.endDay || t.startDay, 1).replace(/-/g, ''),
+    location: where,
+    details: 'Pickleball tournament. Details and registration: ' + PT + '/tournaments/' + t.slug + '\n\nAdded from Bracket (unofficial). Check start times on pickleballtournaments.com.'
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+const isApple = () => /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+function openAddCal(slug){
+  const t = findT(slug);
+  if(!t.startDay) return;
+  const apple = `<a class="btn ${isApple() ? 'primary' : 'ghost'} wide" href="/api/ics?slug=${encodeURIComponent(slug)}" target="_blank" rel="noopener">${icon('calplus')}iPhone / Apple Calendar</a>`;
+  const google = `<a class="btn ${isApple() ? 'ghost' : 'primary'} wide" href="${esc(googleCalUrl(t))}" target="_blank" rel="noopener">${icon('globe')}Google Calendar</a>`;
+  openSheet({ title: 'Add to calendar', body: `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">Adds <b>${esc(t.title)}</b> (${esc(fmtSpan(t.startDay, t.endDay))}) as an all-day event. Check start times on pickleballtournaments.com closer to the date.</p>
+    <div style="display:grid;gap:10px">${isApple() ? apple + google : google + apple}</div>
+    <p class="hint" style="margin-top:12px">iPhone: after tapping, choose “Add to Calendar” (or “Add All”).</p>` });
+}
+function installBody(){
+  if(isStandalone()) return `<div class="empty sm"><div class="ico">${icon('check')}</div><h3>You're all set</h3><p>You're already using Bracket from your Home Screen.</p></div>`;
+  if(isIOS()) return `<p class="hint" style="margin:0 2px 6px;font-size:var(--t-md)">Bracket opens like an app, full screen, with its own icon. It takes 3 taps in Safari:</p>
+    <ol class="steps">
+      <li><span class="num">1</span><span>Tap the <b>Share</b> button <span class="ic">${icon('share')}</span><br><small style="color:var(--sub)">It's at the bottom of Safari. On some iPhones it's under the ••• button.</small></span></li>
+      <li><span class="num">2</span><span>Scroll down and tap <b>Add to Home Screen</b> <span class="ic">${icon('plussq')}</span></span></li>
+      <li><span class="num">3</span><span>Tap <b>Add</b> in the top corner. Then open Bracket from its new icon.</span></li>
+    </ol>
+    <p class="hint">Not in Safari? Open this page in Safari first. Other browsers on iPhone may not offer this.</p>`;
+  if(/Android/i.test(navigator.userAgent)) return `<ol class="steps">
+      <li><span class="num">1</span><span>Tap the <b>⋮</b> menu in the top corner of Chrome.</span></li>
+      <li><span class="num">2</span><span>Tap <b>Add to Home screen</b> or <b>Install app</b>.</span></li>
+      <li><span class="num">3</span><span>Tap <b>Add</b>. Then open Bracket from its new icon.</span></li></ol>`;
+  return `<p class="hint" style="font-size:var(--t-md)">On a computer, just bookmark this page. To put Bracket on your phone, open this same page in Safari on your iPhone and tap <b>Settings → Add to Home Screen</b> for the steps.</p>`;
+}
+function openInstall(){
+  S.installShown = true; saveSettings();
+  openSheet({ title: 'Put Bracket on your Home Screen', body: installBody(), foot: `<button class="btn primary" style="flex:1" data-act="close-sheet">Got it</button>` });
+}
+function maybeAutoInstall(){
+  if(S.installShown || !isIOS() || isStandalone() || !S.onboarded) return;
+  setTimeout(() => { if(!sheets.length && !S.installShown) openInstall(); }, 1400);
+}
+
+/* ---------------- Config + stale-app check ---------------- */
+async function loadConfig(){
+  try {
+    const r = await fetch('/api/config', { cache: 'no-store' });
+    if(!r.ok) return;
+    const j = await r.json();
+    ui.config = j;
+    if(j.version && j.version !== VERSION){
+      // An old copy of the page (home-screen apps hang on to them). Reload once to get the new one.
+      const k = 'bracket_reloaded_' + j.version;
+      let done = false; try { done = !!sessionStorage.getItem(k); sessionStorage.setItem(k, '1'); } catch(e){ done = true; }
+      if(!done){ location.reload(); return; }
+    }
+    if(ui.tab === 'settings' && !ui.spage) renderSettings();
+  } catch(e){}
 }
 
 /* ---------------- Sheets ---------------- */
@@ -1573,36 +1770,54 @@ function enableDrag(sheet, close){
 /* ---------------- Filter sheet ---------------- */
 let filterSheet = null;
 function filterBody(){
-  const f = S.filters, up = upcomingItems();
+  const f = S.filters, up = upcomingItems(), td = todayStr();
+  const count = over => up.filter(t => passes(t, Object.assign({}, f, over)) && matchesQuery(t, ui.q)).length;
   const fc = x => up.filter(t => t.ev && t.ev.formats && t.ev.formats.includes(x)).length;
   const pv = f.maxPrice == null ? PRICE.max : f.maxPrice;
   const dv = f.maxDist == null ? DIST.max : f.maxDist;
   const pct = (v, r) => ((v - r.min) / (r.max - r.min) * 100) + '%';
   const wks = weekends(8);
-  const wkCount = sat => { const [a, b] = wkWindow(sat); return up.filter(t => overlaps(t, a, b) && passes(t, f, true)).length; };
-  const whenTop = [['any', 'Any time'], ['30', 'Next 30 days'], ['90', 'Next 3 months']];
-  return `
-    <div class="fgroup"><div class="flabel">When <span>${esc(whenLabel())}</span></div>
-      <div class="chipset">${whenTop.map(w => `<button class="chip plain" data-act="when" data-v="${w[0]}" aria-pressed="${f.when === w[0]}">${w[1]}</button>`).join('')}</div>
-      <div class="wkgrid">${wks.map(s => { const n = wkCount(s), nm = wkName(s); return `<button class="wk${n ? '' : ' zero'}" data-act="wk" data-v="${s}" aria-pressed="${f.when === 'wk' && f.wk === s}"><small>${nm === 'Weekend' ? 'Fri–Sun' : nm}</small><b>${wkDates(s)}</b><span>${n ? pl(n, 'tournament') : 'Nothing yet'}</span></button>`; }).join('')}</div>
-      <div class="flabel" style="margin-top:16px;font-size:var(--t-sm)">Or pick dates</div>
-      <div class="datein"><label>From<input type="date" data-date="from" min="${todayStr()}" value="${f.when === 'range' && f.from ? f.from : ''}"></label><label>To<input type="date" data-date="to" min="${todayStr()}" value="${f.when === 'range' && f.to ? f.to : ''}"></label></div></div>
-    <div class="fgroup"><div class="flabel">Level ${S.rating != null ? `<span>Your rating ${rt(S.rating)}</span>` : ''}</div>
-      ${segHTML('flevel', [['', 'Any level'], ['fit', 'My level'], ['up', '+ Play up']], f.level || '', S.rating == null ? 'dis' : '')}
-      ${S.rating == null ? `<p class="hint">Set your rating to filter by level. <button class="linkbtn" data-act="go-rating">Set your rating</button></p>` : `<p class="hint">“My level” = events that include ${rt(S.rating)}. “+ Play up” also includes one step higher.</p>`}</div>
-    <div class="fgroup"><div class="flabel">Format</div><div class="chipset">${FORMATS.map(x => `<button class="chip plain" data-act="fmt" data-v="${x}" aria-pressed="${f.formats.includes(x)}">${x} <span style="opacity:.6">${fc(x)}</span></button>`).join('')}</div></div>
-    <div class="fgroup"><div class="flabel">Max price <span id="pLbl">${f.maxPrice == null ? 'Any' : '$' + f.maxPrice + ' or less'}</span></div>
-      <input type="range" data-range="price" min="${PRICE.min}" max="${PRICE.max}" step="${PRICE.step}" value="${pv}" style="--p:${pct(pv, PRICE)}" aria-label="Max price"></div>
-    <div class="fgroup"><div class="flabel">Distance <span id="dLbl">${!S.home ? '' : f.maxDist == null ? 'All of Michigan' : 'Within ' + f.maxDist + ' mi'}</span></div>
-      <input type="range" data-range="dist" min="${DIST.min}" max="${DIST.max}" step="${DIST.step}" value="${dv}" style="--p:${pct(dv, DIST)}" ${S.home ? '' : 'disabled'} aria-label="Distance">
-      ${S.home ? `<p class="hint">From ${esc(S.home.src === 'gps' ? homeName() : S.home.name)}. <button class="linkbtn" data-act="home">Change</button></p>` : `<p class="hint">Set where you play from to use this. <button class="linkbtn" data-act="home">Set home</button></p>`}</div>
-    <div class="fgroup"><div class="row"><div><div class="t">Open to register only</div><div class="s">Hide closed and already-started tournaments</div></div>${swHTML('sw-open', f.openOnly, 'Open to register only')}</div></div>`;
+  const isWk = f.when === 'wk';
+  const otherWk = isWk && !wks.slice(0, 2).includes(f.wk);
+  const opt = (act, v, on, title, sub, n) => `<button class="opt" data-act="${act}" data-v="${v}" aria-pressed="${on}"><span class="ck">${icon('check')}</span><span class="t">${title}${sub ? `<small>${sub}</small>` : ''}</span>${n != null ? `<span class="n">${n}</span>` : ''}</button>`;
+  const wkCount = sat => count({ when: 'wk', wk: sat });
+  const openWk = ui.fx.wk || otherWk, openDates = ui.fx.dates || f.when === 'range';
+  let h = `<div class="fsec"><div class="group-l" style="margin-top:6px">When</div><div class="group">
+    ${opt('when', 'any', f.when === 'any', 'Any time', null, count({ when: 'any' }))}
+    ${opt('wk', wks[0], isWk && f.wk === wks[0], 'This weekend', wkDates(wks[0]), wkCount(wks[0]))}
+    ${opt('wk', wks[1], isWk && f.wk === wks[1], 'Next weekend', wkDates(wks[1]), wkCount(wks[1]))}
+    ${opt('when', '30', f.when === '30', 'Next 30 days', null, count({ when: '30' }))}
+    ${opt('when', '90', f.when === '90', 'Next 3 months', null, count({ when: '90' }))}
+    <button class="opt" data-act="fx" data-v="wk" aria-expanded="${!!openWk}" aria-pressed="${otherWk}"><span class="ck">${icon('check')}</span><span class="t">Another weekend${otherWk ? `<small>${wkDates(f.wk)}</small>` : ''}</span>${icon('chev', 'i chev')}</button>
+    ${openWk ? `<div class="expand"><div class="wkgrid">${wks.slice(2).map(sat => { const n = wkCount(sat); return `<button class="wk${n ? '' : ' zero'}" data-act="wk" data-v="${sat}" aria-pressed="${isWk && f.wk === sat}"><b>${wkDates(sat)}</b><span>${n ? pl(n, 'tournament') : 'Nothing yet'}</span></button>`; }).join('')}</div></div>` : ''}
+    <button class="opt" data-act="fx" data-v="dates" aria-expanded="${!!openDates}" aria-pressed="${f.when === 'range'}"><span class="ck">${icon('check')}</span><span class="t">Pick dates${f.when === 'range' && f.from ? `<small>${fmtSpan(f.from, f.to || f.from)}</small>` : ''}</span>${icon('chev', 'i chev')}</button>
+    ${openDates ? `<div class="expand"><div class="datein"><label>From<input type="date" data-date="from" min="${td}" value="${f.when === 'range' && f.from ? f.from : ''}"></label><label>To<input type="date" data-date="to" min="${td}" value="${f.when === 'range' && f.to ? f.to : ''}"></label></div></div>` : ''}
+  </div></div>`;
+  if(S.rating != null){
+    const mr = myRanges(S.rating);
+    h += `<div class="fsec"><div class="group-l">Level · your rating ${rt(S.rating)}</div><div class="group">
+      ${opt('lvl', '', !f.level, 'Any level', null, count({ level: null }))}
+      ${opt('lvl', 'fit', f.level === 'fit', 'My level', `Events that include ${rt(S.rating)}, like ${mr.mine}`, count({ level: 'fit' }))}
+      ${opt('lvl', 'up', f.level === 'up', 'My level + play up', `Also one step up, like ${mr.up}`, count({ level: 'up' }))}
+    </div></div>`;
+  } else {
+    h += `<div class="fsec"><div class="group-l">Level</div><div class="group"><button class="gitem" data-act="go-rating">${tile('target', 'blue')}<span class="t">Set your rating<small>Then you can show only events at your level</small></span><svg class="i chev"><use href="#i-chev"/></svg></button></div></div>`;
+  }
+  h += `<div class="fsec"><div class="group-l">Format</div><div class="group gpad"><div class="chipset">${FORMATS.map(x => `<button class="chip plain" data-act="fmt" data-v="${x}" aria-pressed="${f.formats.includes(x)}">${x} <span style="opacity:.6">${fc(x)}</span></button>`).join('')}</div><p class="hint">Tap one or more. Leave all off to see every format.</p></div></div>`;
+  h += `<div class="fsec"><div class="group-l">Price</div><div class="group gpad"><div class="flabel" style="margin-bottom:4px">Most I'd pay <span id="pLbl">${f.maxPrice == null ? 'Any price' : '$' + f.maxPrice}</span></div>
+      <input type="range" data-range="price" min="${PRICE.min}" max="${PRICE.max}" step="${PRICE.step}" value="${pv}" style="--p:${pct(pv, PRICE)}" aria-label="Most I'd pay"><p class="hint">Slide all the way right for any price.</p></div></div>`;
+  h += `<div class="fsec"><div class="group-l">Distance</div><div class="group gpad"><div class="flabel" style="margin-bottom:4px">How far I'd drive <span id="dLbl">${!S.home ? '' : f.maxDist == null ? 'All of Michigan' : f.maxDist + ' miles'}</span></div>
+      <input type="range" data-range="dist" min="${DIST.min}" max="${DIST.max}" step="${DIST.step}" value="${dv}" style="--p:${pct(dv, DIST)}" ${S.home ? '' : 'disabled'} aria-label="How far I'd drive">
+      ${S.home ? `<p class="hint">From ${esc(S.home.src === 'gps' ? homeName() : S.home.name)}. <button class="linkbtn" data-act="home">Change</button></p>` : `<p class="hint">Set where you play from to use this. <button class="linkbtn" data-act="home">Set home</button></p>`}</div></div>`;
+  h += `<div class="fsec"><div class="group-l">Registration</div><div class="group"><div class="gitem noicon"><span class="t">Open to register only<small>Hide closed and already-started tournaments</small></span>${swHTML('sw-open', f.openOnly, 'Open to register only')}</div></div></div>`;
+  return h;
 }
 function filterFoot(){
   const n = shownItems().length;
   return `<button class="btn ghost" data-act="reset-filters">Reset</button><button class="btn primary" style="flex:1" data-act="close-sheet">Show ${pl(n, 'tournament')}</button>`;
 }
 function openFilters(){
+  ui.fx = {};
   filterSheet = openSheet({ title: 'Filters', body: filterBody(), foot: filterFoot(), onClose: () => { filterSheet = null; } });
 }
 function filtersChanged(rebuild){
@@ -1683,6 +1898,7 @@ function finishWelcome(){
   w.style.transition = 'opacity .3s'; w.style.opacity = '0';
   setTimeout(() => { w.hidden = true; w.style.opacity = ''; w.innerHTML = ''; }, 300);
   renderAll();
+  maybeAutoInstall();
 }
 
 /* ---------------- Saves ---------------- */
@@ -1796,6 +2012,8 @@ document.addEventListener('click', e => {
     }
     case 'reset-filters': S.filters = Object.assign({}, DEFAULT_FILTERS, { formats: [] }); filtersChanged(true); break;
     case 'reset-all-filters': S.filters = Object.assign({}, DEFAULT_FILTERS, { formats: [] }); ui.q = ''; $('#q').value = ''; $('#qx').hidden = true; filtersChanged(true); break;
+    case 'lvl': S.filters.level = el.dataset.v || null; filtersChanged(true); break;
+    case 'fx': ui.fx[el.dataset.v] = !ui.fx[el.dataset.v]; filtersChanged(true); break;
     case 'when': S.filters.when = el.dataset.v; S.filters.wk = null; S.filters.from = null; S.filters.to = null; filtersChanged(true); break;
     case 'wk': {
       const v = el.dataset.v;
@@ -1854,6 +2072,11 @@ document.addEventListener('click', e => {
       }
       break;
     case 'welcome-done': finishWelcome(); break;
+    case 'seen-all': changedSlugs().forEach(markSeen); afterSaveChange(); toast('All caught up'); break;
+    case 'share': shareTournament(slug); break;
+    case 'share-app': shareApp(); break;
+    case 'addcal': openAddCal(slug); break;
+    case 'install': openInstall(); break;
     case 'undo': if(toastUndo){ const u = toastUndo; toastUndo = null; u(); $('#toast').classList.remove('show'); } break;
   }
 });
@@ -1913,11 +2136,11 @@ document.addEventListener('input', e => {
     if(t.dataset.range === 'price'){
       S.filters.maxPrice = v >= PRICE.max ? null : v;
       t.style.setProperty('--p', ((v - PRICE.min) / (PRICE.max - PRICE.min) * 100) + '%');
-      $('#pLbl').textContent = S.filters.maxPrice == null ? 'Any' : '$' + v + ' or less';
+      $('#pLbl').textContent = S.filters.maxPrice == null ? 'Any price' : '$' + v;
     } else {
       S.filters.maxDist = v >= DIST.max ? null : v;
       t.style.setProperty('--p', ((v - DIST.min) / (DIST.max - DIST.min) * 100) + '%');
-      $('#dLbl').textContent = S.filters.maxDist == null ? 'All of Michigan' : 'Within ' + v + ' mi';
+      $('#dLbl').textContent = S.filters.maxDist == null ? 'All of Michigan' : v + ' miles';
     }
     filtersChanged(false);
   }
@@ -1952,7 +2175,9 @@ if(window.matchMedia){
 
 // Coming back to the app: refresh quietly if the list is old
 document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState === 'visible' && (!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE)) fetchList(false);
+  if(document.visibilityState !== 'visible') return;
+  loadConfig();
+  if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
 });
 
 /* ---------------- Start ---------------- */
@@ -1963,10 +2188,15 @@ document.addEventListener('visibilitychange', () => {
   if((f.when === 'wk' && f.wk && addDays(f.wk, 1) < td) || (f.when === 'range' && f.to && f.to < td)){ f.when = 'any'; f.wk = f.from = f.to = null; }
   saveSettings();
   renderAll(); updateBars();
-  if(!S.onboarded) showWelcome();
   if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
-  const m = /[?#&]t=([a-z0-9-]+)/i.exec(location.search + location.hash);
-  if(m && S.onboarded) openTournament(m[1]);
+  // Shared links: /t/<slug>, ?t=<slug> or #t=<slug>. Someone new sees the tournament first, the welcome after.
+  const m = /^\/t\/([a-z0-9-]+)/i.exec(location.pathname) || /[?#&]t=([a-z0-9-]+)/i.exec(location.search + location.hash);
+  if(m){
+    if(!S.onboarded) ui.welcomeLater = true;
+    openTournament(m[1]);
+  } else if(!S.onboarded) showWelcome();
+  else maybeAutoInstall();
+  loadConfig();
 })();
 </script>
 </body>
