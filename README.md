@@ -31,7 +31,7 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 Vercel Web Analytics script is in index.html; turn it on in Vercel → the project → Analytics.
 
 ## Accounts (Supabase project "bracket")
-Google sign-in through Supabase Auth. Tables `bracket_saves`, `bracket_profile`, `bracket_feedback` with Row Level Security (SQL in the build zip's `Supabase - run in SQL Editor` folder). Signed out, everything stays in the browser; first sign-in on a device merges that device's saves into the account.
+Google sign-in through Supabase Auth. Lives in Joe's **Builds** Supabase project (free-plan project limit). Tables `bracket_saves`, `bracket_profile`, `bracket_feedback`, `bracket_partner_posts`, `bracket_partner_requests`, all with Row Level Security (SQL in the build zips' `Supabase - run in SQL Editor` folders: 1-schema.sql, 2-partners.sql). Signed out, everything stays in the browser; first sign-in on a device merges that device's saves into the account.
 
 ## Vercel env vars
 - `SUPABASE_URL`: the Bracket Supabase project URL

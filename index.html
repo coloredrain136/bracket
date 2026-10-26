@@ -500,6 +500,18 @@ input[type=range]:disabled{ opacity:.4; }
 .syncline{ display:flex; align-items:center; gap:6px; font-size:var(--t-xs); color:var(--sub); }
 .syncline i{ width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; }
 .syncline i.err{ background:#ff9f0a; }
+.pp{ padding:13px 13px 12px; margin:0 0 8px; border-radius:var(--r-md); background:var(--seg-bg); }
+.pp.near{ box-shadow:inset 0 0 0 1.5px var(--accent); }
+.pp-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pp-top b{ font-size:var(--t-md); }
+.pp-ev{ font-size:var(--t-sm); color:var(--sub); font-weight:600; margin-top:3px; }
+.pp p{ margin:6px 0 0; font-size:var(--t-sm); color:var(--text); white-space:pre-line; overflow-wrap:anywhere; }
+.pp-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; font-size:var(--t-xs); color:var(--faint); flex-wrap:wrap; }
+.pp-foot .linkbtn{ font-size:var(--t-xs); color:var(--faint); }
+.pp .acts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.pcount{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:var(--t-sm); font-weight:700; color:var(--accent-text); }
+.pcount svg{ width:17px; height:17px; }
+.newtag{ font:800 10.5px/1 var(--font); padding:4px 7px; border-radius:6px; background:#ff9f0a; color:#2b1a00; }
 .preview{ padding:14px 16px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-md); }
 
 /* Help page */
@@ -640,6 +652,7 @@ input[type=range]:disabled{ opacity:.4; }
     <section class="view" id="v-mine" aria-label="Mine">
       <h1 class="big-title">Mine</h1>
       <p class="big-sub" id="mineSub">Tournaments you saved, on this device.</p>
+      <div id="minePartners"></div>
       <div id="mineSeg"></div>
       <div id="mineList"></div>
     </section>
@@ -661,7 +674,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-4';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-5';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -1089,7 +1102,7 @@ function card(t){
       <h3>${esc(t.title)}</h3>
       <div class="tags"><span class="tag ${st.k}">${esc(st.txt)}</span>${t.prize ? '<span class="tag prize">$ Prize money</span>' : ''}</div>
       ${fm || lv ? `<div class="fmt">${lv ? `<span class="lv ${lv.k}">${esc(lv.txt)}</span>${fm ? ' · ' : ''}` : ''}${esc(fm)}</div>` : ''}
-      <div class="foot">${meter(q.q)}<span>${playersText(t)}</span></div>${price ? `<div class="price">${esc(price)}</div>` : ''}
+      <div class="foot">${meter(q.q)}<span>${playersText(t)}</span></div>${price ? `<div class="price">${esc(price)}</div>` : ''}${partner.counts[t.slug] ? `<div class="pcount">${icon('people')}${partner.counts[t.slug]} looking for a partner</div>` : ''}
     </div>
     <button class="star" data-act="star" data-slug="${esc(t.slug)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from Interested' : 'Interested'}">${icon('star')}</button>
   </div>`;
@@ -1245,6 +1258,8 @@ function renderMine(noWarm){
   $('#mineSeg').innerHTML = segHTML('mine', tabs.map(t => [t[0], t[1] + (t[2] ? ' ' + t[2] : '')]), S.mineTab);
   const items = b[S.mineTab] || [];
   const el = $('#mineList');
+  $('#minePartners').innerHTML = minePartnersHTML();
+  markInboxSeen();
   if(!items.length){
     const msg = {
       interested: ['Nothing saved yet', 'Tap the ☆ on any tournament to keep it here.', 'star'],
@@ -1269,7 +1284,7 @@ function warmSaved(){
 }
 // The Mine badge only shows when a saved tournament changed since you last looked
 function renderBadge(){
-  const n = changedSlugs().length;
+  const n = changedSlugs().length + partnerNew();
   const el = $('#mineBadge');
   el.hidden = !n; el.textContent = n;
 }
@@ -1365,7 +1380,7 @@ function settingsPage(p){
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
   if(p === 'account'){
-    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your rating, home city and the Fit for you setting</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your rating, home city and the Fit for you setting<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
     if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
       ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
     return `<div class="spage">${pageHead('Account')}
@@ -1422,6 +1437,8 @@ function settingsPage(p){
     <div class="group"><p>When you've set your rating, each tournament shows a <b>Fit for you</b> meter. It looks at whether there are events at your level, where your rating sits in those events (near the top of 3.0–3.5 is easier than near the bottom), how many teams have signed up, and whether those events are already full.</p><p>It can't see your match history, wins or partners, so treat it as a starting point. You can turn it off in Settings.</p></div>
     <div class="group-l">Sharing and your calendar</div>
     <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li></ul></div>
+    <div class="group-l">Find a partner</div>
+    <div class="group"><ul><li>Open a tournament and scroll to <b>Find a partner</b>. Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
     <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
@@ -1551,6 +1568,9 @@ function detailBody(t){
     }
   }
 
+  // ---- Find a partner
+  if(sb && tt.startDay && !isPast(tt)) h += partnerBlock(tt, events);
+
   // ---- Quality
   const q = quality(Object.assign({}, tt, { players }), events.length || null);
   h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
@@ -1630,6 +1650,7 @@ function detailFoot(t){
 let detailSheet = null;
 function openTournament(slug){
   ui.openSlug = slug; ui.descOpen = false; ui.evMine = true;
+  loadPartnerPosts(slug);
   ui.openChanges = changesFor(slug);
   if(ui.openChanges.length){ markSeen(slug); renderBadge(); if(ui.tab === 'mine') renderMine(true); else if(ui.tab === 'browse') renderList(); }
   const t = findT(slug);
@@ -1777,6 +1798,7 @@ async function initAuth(cfg){
       renderAuthBits();
     });
     acct.ready = true;
+    loadPartnerCounts(true);
     if(/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash); // tidy the address after Google
     renderAuthBits();
     if(acct.user) pullSync();
@@ -1810,6 +1832,7 @@ async function signOut(){
   S.syncedUser = null; S.syncDirty = false; save(LS.settings, S);
   try { await sb.auth.signOut(); } catch(e){}
   setSession(null); acct.mirror = null; acct.lastSync = 0;
+  partner.myPosts = []; partner.inbox = []; partner.sent = []; renderBadge();
   toast('Signed out. Your saves are still on this phone.');
   renderAuthBits();
 }
@@ -1862,6 +1885,7 @@ async function pullSync(){
     await pushSaves();
     await pushProfile();
     acct.lastSync = Date.now();
+    loadPartnerMine(true);
     if(first && (sv.data || []).length) toast('Signed in. Your saved tournaments are synced.');
     else if(first) toast('Signed in. Your saves will follow you now.');
   } catch(e){
@@ -1911,6 +1935,208 @@ async function pushProfile(){
     if(error) throw error;
     acct.profSent = key;
   } catch(e){ acct.error = 'Couldn’t sync your rating and home.'; renderSyncLine(); }
+}
+
+/* ---------------- Find a partner ----------------
+   Posts: anyone can read open posts (first name + last initial, rating, event, note).
+   Requests: "Ask to team up" sends your name + contact only to that player. Both are
+   protected in Supabase (2-partners.sql). New requests show as a badge on Mine. */
+const POST_COLS = 'id,slug,title,end_day,event,rating,display_name,note,status,created_at';
+const partner = { counts: {}, bySlug: {}, loading: {}, myPosts: [], inbox: [], sent: [], mineAt: 0, countsAt: 0 };
+function shortName(){
+  const n = acctName().trim();
+  if(!n) return '';
+  if(n.includes('@')){ const u = n.split('@')[0].replace(/[._-]+/g, ' ').trim(); return u.charAt(0).toUpperCase() + u.slice(1, 20); }
+  const parts = n.split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+}
+async function loadPartnerCounts(force){
+  if(!sb || (!force && Date.now() - partner.countsAt < 120000)) return;
+  partner.countsAt = Date.now();
+  const { data, error } = await sb.from('bracket_partner_posts').select('slug').eq('status', 'open').gte('end_day', todayStr());
+  if(error) return;
+  partner.counts = {};
+  (data || []).forEach(r => { partner.counts[r.slug] = (partner.counts[r.slug] || 0) + 1; });
+  if(ui.tab === 'browse') renderList();
+}
+async function loadPartnerPosts(slug){
+  if(!sb || partner.loading[slug]) return;
+  partner.loading[slug] = true;
+  try {
+    const { data, error } = await sb.from('bracket_partner_posts').select(POST_COLS + (acct.user ? ',user_id' : '')).eq('slug', slug).order('created_at', { ascending: false });
+    if(!error) partner.bySlug[slug] = data || [];
+  } finally { partner.loading[slug] = false; refreshOpenDetail(); }
+}
+async function loadPartnerMine(force){
+  if(!sb || !acct.user || (!force && Date.now() - partner.mineAt < 30000)) return;
+  partner.mineAt = Date.now();
+  const uid = acct.user.id;
+  const [posts, reqs] = await Promise.all([
+    sb.from('bracket_partner_posts').select(POST_COLS + ',user_id').eq('user_id', uid).order('end_day'),
+    sb.from('bracket_partner_requests').select('id,post_id,from_user,to_user,from_name,rating,contact,message,status,created_at,bracket_partner_posts(title,slug,event,end_day,display_name,status)').order('created_at', { ascending: false })
+  ]);
+  if(!posts.error) partner.myPosts = (posts.data || []).filter(p => p.end_day >= todayStr());
+  if(!reqs.error){
+    const all = reqs.data || [];
+    partner.inbox = all.filter(r => r.to_user === uid && r.status !== 'declined');
+    partner.sent = all.filter(r => r.from_user === uid);
+  }
+  renderBadge();
+  if(ui.tab === 'mine') renderMine(true);
+}
+const partnerNew = () => partner.inbox.filter(r => r.status === 'sent').length;
+let seenBusy = false;
+async function markInboxSeen(){
+  const ids = partner.inbox.filter(r => r.status === 'sent').map(r => r.id);
+  if(!ids.length || !sb || seenBusy || ui.tab !== 'mine') return;
+  seenBusy = true;
+  setTimeout(async () => {
+    const { error } = await sb.from('bracket_partner_requests').update({ status: 'seen' }).in('id', ids);
+    if(!error){ partner.inbox.forEach(r => { if(ids.includes(r.id)) r.status = 'seen'; r._new = ids.includes(r.id) || r._new; }); renderBadge(); }
+    seenBusy = false;
+  }, 1500);
+}
+function contactLinks(c){
+  c = String(c || '').trim();
+  if(/@/.test(c)) return `<a class="btn sm ghost" href="mailto:${esc(c)}">${icon('chat')}Email</a>`;
+  const d = c.replace(/\D/g, '');
+  if(d.length >= 10){ const n = d.length === 10 ? '+1' + d : '+' + d; return `<a class="btn sm ghost" href="sms:${n}">${icon('chat')}Text</a><a class="btn sm ghost" href="tel:${n}">${icon('phone')}Call</a>`; }
+  return '';
+}
+function partnerBlock(t, events){
+  const posts = (partner.bySlug[t.slug] || []).filter(p => p.status === 'open' || (acct.user && p.user_id === acct.user.id));
+  const loading = partner.loading[t.slug] && !partner.bySlug[t.slug];
+  const me = acct.user && acct.user.id;
+  const asked = new Set(partner.sent.map(r => r.post_id));
+  const mineOpen = posts.some(p => p.user_id === me && p.status === 'open');
+  const others = posts.filter(p => p.user_id !== me);
+  let h = `<div class="blk"><h3>Find a partner<small>${others.length ? pl(others.length, 'player') + ' looking' : ''}</small></h3>`;
+  if(loading) h += '<div class="skel sm"></div>';
+  else if(!posts.length) h += `<p class="desc" style="margin-bottom:10px">Nobody's looking yet. Post that you need a partner and other players can ask to team up.</p>`;
+  posts.forEach(p => {
+    const mine = p.user_id === me;
+    const near = S.rating != null && p.rating != null && Math.abs(p.rating - S.rating) <= 0.25 && !mine;
+    h += `<div class="pp${near ? ' near' : ''}"><div class="pp-top"><b>${esc(p.display_name)}</b>${p.rating != null ? `<span class="tag info">${rt(p.rating)}</span>` : ''}${near ? '<span class="yl" style="margin:0">Close to your rating</span>' : ''}${mine ? `<span class="tag reg">${p.status === 'found' ? 'Found a partner' : 'Your post'}</span>` : ''}</div>
+      <div class="pp-ev">${esc(p.event)}</div>${p.note ? `<p>${esc(p.note)}</p>` : ''}
+      <div class="pp-foot"><span>Posted ${relAgo(p.created_at)}</span>${mine ? `<button class="linkbtn" data-act="tab" data-tab="mine">Manage in Mine</button>` : `<button class="linkbtn" data-act="p-report" data-id="${esc(p.id)}">Report</button>`}</div>
+      ${mine ? '' : asked.has(p.id) ? `<div class="acts"><span class="tag open">✓ You asked</span></div>` : `<div class="acts"><button class="btn sm primary" data-act="p-ask" data-id="${esc(p.id)}" data-slug="${esc(t.slug)}">${icon('people')}Ask to team up</button></div>`}</div>`;
+  });
+  if(!acct.user) h += `<button class="gbtn" data-act="signin" style="margin-top:6px">${GOOGLE_G}Sign in to post or ask</button><p class="fine">Anyone can look. Signing in keeps it to real players.</p>`;
+  else if(!mineOpen) h += `<button class="btn ghost wide" data-act="p-new" data-slug="${esc(t.slug)}" style="margin-top:6px">${icon('people')}I'm looking for a partner</button>`;
+  h += `<p class="fine">Only your first name, last initial, rating and note are shown. Contact info is shared only with the player you ask.</p></div>`;
+  return h;
+}
+function eventChoices(slug){
+  const d = detailOf(slug);
+  const names = new Set();
+  (d && d.events ? d.events : []).forEach(e => { if(!e.canceled && !/singles/i.test(e.format)) names.add(evName(e)); });
+  const list = [...names].filter(Boolean).slice(0, 10);
+  return list.length ? list : ["Men's Doubles", "Women's Doubles", 'Mixed Doubles'];
+}
+function openNewPost(slug){
+  const t = findT(slug);
+  const opts = eventChoices(slug);
+  ui.pEvent = opts[0];
+  const el = openSheet({ title: "I'm looking for a partner", body: `
+    <p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">${esc(t.title)} · ${esc(fmtSpan(t.startDay, t.endDay))}</p>
+    <div class="flabel">Which event?</div>
+    <div class="chipset" style="margin-bottom:18px">${opts.map((o, i) => `<button class="chip plain" data-act="p-ev" data-v="${esc(o)}" aria-pressed="${i === 0}">${esc(o)}</button>`).join('')}</div>
+    <div class="flabel">Your rating</div>
+    <div style="margin-bottom:16px">${ratingSelect('pRating')}</div>
+    <label class="field"><span>Name shown</span><input id="pName" maxlength="40" value="${esc(shortName())}"></label>
+    <label class="field"><span>Note <span style="font-weight:500;color:var(--sub)">(optional)</span></span><textarea id="pNote" maxlength="280" style="min-height:100px" placeholder="Days you can play, what kind of partner you're looking for…"></textarea></label>`,
+    foot: `<button class="btn primary" style="flex:1" data-act="p-post" data-slug="${esc(slug)}">Post</button>` });
+  return el;
+}
+async function submitPost(btn, slug){
+  const t = findT(slug);
+  const name = $('#pName').value.trim(), note = $('#pNote').value.trim(), r = $('#pRating').value;
+  if(!name){ toast('Add the name to show.'); return; }
+  btn.disabled = true; btn.textContent = 'Posting…';
+  const { error } = await sb.from('bracket_partner_posts').insert({ user_id: acct.user.id, slug, title: t.title, end_day: t.endDay || t.startDay, event: ui.pEvent, rating: r ? parseFloat(r) : null, display_name: name, note: note || null });
+  if(error){ btn.disabled = false; btn.textContent = 'Post'; toast(/duplicate|unique/i.test(error.message) ? 'You already posted for that event.' : (error.message || 'Couldn’t post right now.')); return; }
+  closeSheet(btn.closest('.sheet'));
+  toast('Posted. Players can now ask to team up.');
+  partner.countsAt = 0; partner.mineAt = 0;
+  loadPartnerPosts(slug); loadPartnerCounts(true); loadPartnerMine(true);
+}
+function openAsk(id, slug){
+  const p = (partner.bySlug[slug] || []).find(x => x.id === id);
+  if(!p) return;
+  const t = findT(slug);
+  ui.askPost = p;
+  openSheet({ title: `Ask ${p.display_name} to team up`, body: `
+    <p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">${esc(p.event)} · ${esc(t.title)}</p>
+    <label class="field"><span>Your name</span><input id="aName" maxlength="40" value="${esc(shortName())}"></label>
+    <div class="flabel">Your rating</div><div style="margin-bottom:16px">${ratingSelect('aRating')}</div>
+    <label class="field"><span>How can they reach you?</span><input id="aContact" maxlength="120" inputmode="email" placeholder="Phone number or email" value="${esc(acct.user && acct.user.email || '')}"></label>
+    <p class="hint" style="margin:-6px 2px 14px">Only ${esc(p.display_name)} will see this.</p>
+    <label class="field"><span>Message <span style="font-weight:500;color:var(--sub)">(optional)</span></span><textarea id="aMsg" maxlength="280" style="min-height:90px" placeholder="Hi! I'm a 3.4 and free both days…"></textarea></label>`,
+    foot: `<button class="btn primary" style="flex:1" data-act="p-send" data-id="${esc(id)}" data-slug="${esc(slug)}">Send request</button>` });
+}
+async function submitAsk(btn, id, slug){
+  const name = $('#aName').value.trim(), contact = $('#aContact').value.trim(), msg = $('#aMsg').value.trim(), r = $('#aRating').value;
+  if(!name){ toast('Add your name.'); return; }
+  if(contact.length < 3){ toast('Add a phone number or email so they can reach you.'); return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const { error } = await sb.from('bracket_partner_requests').insert({ post_id: id, from_user: acct.user.id, from_name: name, rating: r ? parseFloat(r) : null, contact, message: msg || null });
+  if(error){ btn.disabled = false; btn.textContent = 'Send request'; toast(/duplicate|unique/i.test(error.message) ? 'You already asked this player.' : (error.message || 'Couldn’t send right now.')); return; }
+  closeSheet(btn.closest('.sheet'));
+  toast(`Sent! ${ui.askPost ? ui.askPost.display_name : 'They'} will see it in Bracket.`);
+  partner.mineAt = 0; await loadPartnerMine(true); refreshOpenDetail();
+}
+async function postFound(id){
+  const { error } = await sb.from('bracket_partner_posts').update({ status: 'found', updated_at: new Date().toISOString() }).eq('id', id);
+  if(error){ toast('Couldn’t update right now.'); return; }
+  toast('Nice! Your post is closed.'); partner.countsAt = 0; await loadPartnerMine(true); loadPartnerCounts(true);
+}
+async function postDelete(id){
+  if(!confirm('Delete this partner post? Requests on it are removed too.')) return;
+  const { error } = await sb.from('bracket_partner_posts').delete().eq('id', id);
+  if(error){ toast('Couldn’t delete right now.'); return; }
+  toast('Post deleted.'); partner.countsAt = 0; await loadPartnerMine(true); loadPartnerCounts(true);
+}
+async function requestHide(id){
+  const { error } = await sb.from('bracket_partner_requests').update({ status: 'declined' }).eq('id', id);
+  if(error){ toast('Couldn’t update right now.'); return; }
+  partner.inbox = partner.inbox.filter(r => r.id !== id); renderMine(true); renderBadge();
+}
+async function requestWithdraw(id){
+  const { error } = await sb.from('bracket_partner_requests').delete().eq('id', id);
+  if(error){ toast('Couldn’t update right now.'); return; }
+  partner.sent = partner.sent.filter(r => r.id !== id); renderMine(true); refreshOpenDetail();
+}
+async function reportPost(id){
+  if(!confirm('Report this post? It will be reviewed and removed if it breaks the rules.')) return;
+  let p = null; Object.values(partner.bySlug).forEach(list => list.forEach(x => { if(x.id === id) p = x; }));
+  try {
+    await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'problem', message: `REPORTED partner post ${id}${p ? ` · ${p.display_name} · ${p.event} · ${p.slug} · "${p.note || ''}"` : ''}`, contact: acct.user ? acct.user.email : '', version: VERSION }) });
+    toast('Thanks. It’s been reported.');
+  } catch(e){ toast('Couldn’t report right now.'); }
+}
+function minePartnersHTML(){
+  if(!acct.user || (!partner.inbox.length && !partner.myPosts.length && !partner.sent.length)) return '';
+  let h = `<div class="group-l" style="margin-top:6px">Find a partner</div>`;
+  if(partner.inbox.length){
+    h += partner.inbox.map(r => { const p = r.bracket_partner_posts || {}; return `<div class="pp" style="background:var(--card);border:1px solid var(--card-stroke)">
+      <div class="pp-top">${r.status === 'sent' || r._new ? '<span class="newtag">NEW</span>' : ''}<b>${esc(r.from_name)}</b>${r.rating != null ? `<span class="tag info">${rt(r.rating)}</span>` : ''}<span style="font-size:var(--t-xs);color:var(--sub)">wants to team up</span></div>
+      <div class="pp-ev">${esc(p.event || '')}${p.title ? ' · ' + esc(p.title) : ''}</div>${r.message ? `<p>${esc(r.message)}</p>` : ''}
+      <p style="color:var(--sub)">Reach them: <b style="color:var(--text)">${esc(r.contact)}</b></p>
+      <div class="acts">${contactLinks(r.contact)}<button class="btn sm ghost" data-act="p-hide" data-id="${esc(r.id)}">Hide</button></div></div>`; }).join('');
+  }
+  partner.myPosts.forEach(p => {
+    const n = partner.inbox.filter(r => r.post_id === p.id).length;
+    h += `<div class="pp" style="background:var(--card);border:1px solid var(--card-stroke)"><div class="pp-top"><b>Your post</b><span class="tag ${p.status === 'found' ? 'closed' : 'open'}">${p.status === 'found' ? 'Found a partner' : 'Looking'}</span></div>
+      <div class="pp-ev">${esc(p.event)} · ${esc(p.title || p.slug)}</div><p style="color:var(--sub)">${n ? pl(n, 'request') : 'No requests yet'}</p>
+      <div class="acts"><button class="btn sm ghost" data-act="open" data-slug="${esc(p.slug)}">View tournament</button>${p.status === 'open' ? `<button class="btn sm ghost" data-act="p-found" data-id="${esc(p.id)}">Found a partner</button>` : ''}<button class="btn sm danger" data-act="p-del" data-id="${esc(p.id)}">Delete</button></div></div>`;
+  });
+  partner.sent.forEach(r => {
+    const p = r.bracket_partner_posts;
+    const st = !p || p.status === 'found' ? 'They found a partner' : r.status === 'sent' ? 'Waiting for them to see it' : r.status === 'declined' ? 'Not this time' : 'Seen';
+    h += `<div class="pp" style="background:var(--card);border:1px solid var(--card-stroke)"><div class="pp-top"><b>You asked ${esc(p ? p.display_name : 'a player')}</b><span class="tag info">${st}</span></div>
+      <div class="pp-ev">${p ? esc(p.event) + ' · ' + esc(p.title || '') : ''}</div><div class="acts"><button class="btn sm ghost" data-act="p-withdraw" data-id="${esc(r.id)}">Take back request</button></div></div>`;
+  });
+  return h + '<div style="height:10px"></div>';
 }
 
 /* ---------------- Feedback ---------------- */
@@ -2311,6 +2537,16 @@ document.addEventListener('click', e => {
     case 'fb-again': ui.fb = { kind: 'idea' }; renderSettings(); break;
     case 'fbkind': ui.fb.kind = el.dataset.v; document.querySelectorAll('[data-act="fbkind"]').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
     case 'fbsend': sendFeedback(el); break;
+    case 'p-new': if(!acct.user){ signIn(); break; } openNewPost(slug); break;
+    case 'p-ev': ui.pEvent = el.dataset.v; el.parentElement.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
+    case 'p-post': submitPost(el, slug); break;
+    case 'p-ask': if(!acct.user){ signIn(); break; } openAsk(el.dataset.id, slug); break;
+    case 'p-send': submitAsk(el, el.dataset.id, slug); break;
+    case 'p-found': postFound(el.dataset.id); break;
+    case 'p-del': postDelete(el.dataset.id); break;
+    case 'p-hide': requestHide(el.dataset.id); break;
+    case 'p-withdraw': requestWithdraw(el.dataset.id); break;
+    case 'p-report': reportPost(el.dataset.id); break;
     case 'undo': if(toastUndo){ const u = toastUndo; toastUndo = null; u(); $('#toast').classList.remove('show'); } break;
   }
 });
@@ -2339,6 +2575,7 @@ function onSeg(name, v){
 }
 document.addEventListener('change', e => {
   const t = e.target;
+  if(t.matches('[data-rating]') && (t.id === 'pRating' || t.id === 'aRating')) return;
   if(t.matches('[data-rating]')){
     S.rating = t.value ? parseFloat(t.value) : null;
     if(S.rating == null) S.filters.level = null;
@@ -2413,6 +2650,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.visibilityState !== 'visible') return;
   loadConfig();
   if(acct.user && Date.now() - acct.lastSync > 60000) pullSync();
+  loadPartnerCounts(); loadPartnerMine();
   if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
 });
 

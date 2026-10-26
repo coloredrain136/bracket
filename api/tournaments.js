@@ -11,7 +11,7 @@ import { getActionId, searchPage, getEvents, isMichigan, skillRange } from './_l
 export const config = { maxDuration: 45 };
 
 const MAX_PAGES = 6;
-const VERSION = 'bracket-4';
+const VERSION = 'bracket-5';
 
 async function allPages(actionId, log){
   const first = await searchPage(actionId, 1);
