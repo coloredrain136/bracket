@@ -246,7 +246,7 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .card .newdot{ position:absolute; top:14px; left:10px; width:10px; height:10px; border-radius:50%; background:#ff9f0a; box-shadow:0 0 0 3px var(--bg); }
 .mine-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:14px 2px 0; padding:12px 14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); font-weight:600; }
 .mine-bar button{ color:inherit; font-weight:800; text-decoration:underline; white-space:nowrap; }
-.actions{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
+.actions{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:14px 0 4px; }
 .act{ display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 4px 10px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-xs); font-weight:700; color:var(--text); text-align:center; }
 .act svg{ width:22px; height:22px; color:var(--accent-text); }
 .steps{ list-style:none; margin:4px 0 0; padding:0; counter-reset:st; }
@@ -625,6 +625,7 @@ input[type=range]:disabled{ opacity:.4; }
     <symbol id="i-plussq" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
     <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5h-2.5z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
   </defs>
 </svg>
@@ -683,7 +684,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-9';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-10';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -726,6 +727,8 @@ S.filters = Object.assign({}, DEFAULT_FILTERS, S.filters || {});
 if(S.level != null && S.rating == null){ const r = parseFloat(S.level); if(r) S.rating = r; }
 delete S.level;
 // Optional ratings by event type (bracket-7). Empty = use the general rating.
+const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, early: true, changes: false };
+S.notify = Object.assign({}, NOTIFY_DEFAULTS, S.notify || {});
 S.ratings = { doubles: (S.ratings && S.ratings.doubles) ?? null, singles: (S.ratings && S.ratings.singles) ?? null };   // bracket-8: mixed uses doubles
 if(S.filters.level && S.filters.level !== 'fit' && S.filters.level !== 'up') S.filters.level = 'fit';
 if(S.filters.when === '30' || S.filters.when === '90' || S.filters.when === 'any' || S.filters.when === 'wk' || S.filters.when === 'range'){} else S.filters.when = 'any';
@@ -954,6 +957,8 @@ function snap(t){
     savedAt: Date.now(), seenAt: Date.now()
   };
 }
+// Keep a tournament's own alert choices when it's saved the other way too (Interested ↔ Registered)
+function withAlerts(s, other){ if(other && other.alerts != null) s.alerts = other.alerts; return s; }
 function findT(slug){
   const live = LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : null;
   if(live) return live;
@@ -1344,6 +1349,8 @@ function renderSettings(){
       ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) + (specificCount() ? ` +${specificCount()}` : '') : specificCount() ? ratingSummary() : 'Not set')}
     </div>
     <p class="gfoot">Home is used for distances. Your rating finds events at your level. ${acct.user ? 'Both sync to your account.' : 'Both stay on this phone.'}</p>
+    <div class="group-l">Notifications</div>
+    <div class="group">${row('sp-notify', 'bell', 'orange', 'Notifications', pushState.on ? 'On' : 'Off', 'Reminders about tournaments you saved')}</div>
     <div class="group-l">Display</div>
     <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}</div>
     <div class="group-l">Help</div>
@@ -1382,6 +1389,21 @@ function settingsPage(p){
       <div class="gitem noicon"><span class="t">Level filter<small>In Filters, “My level” shows tournaments with events at your level. “+ Play up” also includes one step up.</small></span></div>
     </div>
     <p class="gfoot">Bracket can't see your DUPR account. It only compares your rating with each event's level range.</p></div>`;
+  if(p === 'notify'){
+    if(!pushState.checked) checkPush().then(() => { if(ui.spage === 'notify') renderSettings(); });
+    let status;
+    if(!pushSupported() && isIOS() && !isStandalone()) status = `<div class="group"><div class="gitem col"><span class="t">Add Bracket to your Home Screen first</span><p>On iPhone, notifications only work when you open Bracket from its Home Screen icon.</p><button class="btn ghost" data-act="install" style="margin-top:10px">${icon('phone')}Show me how</button></div></div>`;
+    else if(!pushSupported()) status = `<div class="group"><div class="gitem col"><p>This browser can't show notifications. Try Chrome or Safari, or Bracket from your Home Screen.</p></div></div>`;
+    else if(!acct.user) status = `<div class="group"><div class="gitem col"><span class="t">Sign in to get notifications<small>Bracket needs to know which tournaments you saved.</small></span><button class="gbtn" data-act="signin" style="margin-top:10px">${GOOGLE_G}Sign in with Google</button></div></div>`;
+    else status = `<div class="group"><div class="gitem noicon"><span class="t">Notifications on this device<small>${pushState.busy ? 'Turning on…' : pushState.on ? 'On' : 'Off'}</small></span>${swHTML('sw-push', pushState.on, 'Notifications on this device')}</div>
+      ${pushState.on ? `<div class="gitem noicon"><span class="t">Send a test</span><button class="btn sm ghost" data-act="push-test">Send</button></div>` : ''}</div>`;
+    return `<div class="spage">${pageHead('Notifications')}
+      <p class="big-sub">Bracket can remind you about tournaments you ☆ saved or marked registered. At most one alert per tournament a day, and never at night (only 9am–8pm).</p>
+      ${status}
+      <div class="group-l">What to tell me</div>
+      <div class="group">${NOTIFY_TYPES.map(([k, name, sub]) => `<div class="gitem noicon"><span class="t">${name}<small>${sub}</small></span>${swHTML('sw-notify', S.notify[k], name).replace('data-act="sw-notify"', `data-act="sw-notify" data-k="${k}"`)}</div>`).join('')}</div>
+      <p class="gfoot">Want something different for one tournament? Open it and tap <b>Alerts</b>.</p></div>`;
+  }
   if(p === 'looks') return `<div class="spage">${pageHead('Appearance')}
     <div class="group-l">Light or dark</div>
     <div class="group"><div class="gitem col">${segHTML('mode', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], S.mode)}</div></div>
@@ -1402,7 +1424,7 @@ function settingsPage(p){
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
   if(p === 'account'){
-    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings and home city<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings and home city<br>• If you turn on notifications: a code for each device so Bracket can send alerts there<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
     if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
       ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
     return `<div class="spage">${pageHead('Account')}
@@ -1460,6 +1482,8 @@ function settingsPage(p){
     <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li></ul></div>
     <div class="group-l">Find a partner</div>
     <div class="group"><ul><li>Open a tournament and tap <b>Need a partner?</b> (under the events list). Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
+    <div class="group-l">Notifications</div>
+    <div class="group"><ul><li>Turn them on in <b>Settings → Notifications</b>. You need to be signed in, and on iPhone Bracket has to be on your Home Screen.</li><li>Pick what you want: partner requests, the day before a tournament you registered for, registration closing, early-bird price ending, or changes.</li><li>Want something different for one tournament? Open it and tap <b>Alerts</b>.</li><li>Bracket sends at most one alert per tournament a day, and only between 9am and 8pm.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
     <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
@@ -1537,6 +1561,7 @@ function detailBody(t){
     h += `<div class="actions">
       <button class="act" data-act="share" data-slug="${esc(slug)}">${icon('share')}Share</button>
       <button class="act" data-act="addcal" data-slug="${esc(slug)}">${icon('calplus')}Add to calendar</button>
+      <button class="act" data-act="alerts" data-slug="${esc(slug)}">${icon('bell')}${alertsLabel(slug)}</button>
     </div>`;
   }
   if(err === 'gone'){
@@ -1737,11 +1762,15 @@ const isStandalone = () => !!(navigator.standalone || (window.matchMedia && matc
 function openAddCal(slug){
   const t = findT(slug);
   if(!t.startDay) return;
-  const apple = `<a class="btn ${isApple() ? 'primary' : 'ghost'} wide" href="/api/ics?slug=${encodeURIComponent(slug)}" target="_blank" rel="noopener">${icon('calplus')}iPhone / Apple Calendar</a>`;
+  // The Home Screen app opens calendar files in a mini browser that shows a blank page, so there we hand
+  // the event straight to the Calendar app with webcal://. In Safari the normal link shows "Add to Calendar".
+  const homeApp = isIOS() && isStandalone();
+  const icsHref = (homeApp ? 'webcal://' + location.host : '') + '/api/ics?slug=' + encodeURIComponent(slug);
+  const apple = `<a class="btn ${isApple() ? 'primary' : 'ghost'} wide" href="${esc(icsHref)}">${icon('calplus')}iPhone / Apple Calendar</a>`;
   const google = `<a class="btn ${isApple() ? 'ghost' : 'primary'} wide" href="${esc(googleCalUrl(t))}" target="_blank" rel="noopener">${icon('globe')}Google Calendar</a>`;
   openSheet({ title: 'Add to calendar', body: `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">Adds <b>${esc(t.title)}</b> (${esc(fmtSpan(t.startDay, t.endDay))}) as an all-day event. Check start times on pickleballtournaments.com closer to the date.</p>
     <div style="display:grid;gap:10px">${isApple() ? apple + google : google + apple}</div>
-    <p class="hint" style="margin-top:12px">iPhone: after tapping, choose “Add to Calendar” (or “Add All”).</p>` });
+    <p class="hint" style="margin-top:12px">${homeApp ? 'Your iPhone will ask to <b>Subscribe</b> to this tournament. Tap Subscribe and it shows up in your Calendar (just this one tournament).' : 'iPhone: after tapping, choose “Add to Calendar” (or “Add All”).'}</p>` });
 }
 function installBody(){
   if(isStandalone()) return `<div class="empty sm"><div class="ico">${icon('check')}</div><h3>You're all set</h3><p>You're already using Bracket from your Home Screen.</p></div>`;
@@ -1766,6 +1795,110 @@ function maybeAutoInstall(){
   if(S.installShown || !isIOS() || isStandalone() || !S.onboarded) return;
   setTimeout(() => { if(!sheets.length && !S.installShown) openInstall(); }, 1400);
 }
+
+/* ---------------- Notifications ----------------
+   Web Push: works on iPhone only from the Home Screen app (iOS 16.4+), on Android in Chrome, and on computers.
+   Signed-in only: the hourly server check (api/cron.js) reads your saved tournaments to decide what to send.
+   Settings → Notifications sets the types; each saved tournament can override them (its "alerts" in the save). */
+const NOTIFY_TYPES = [
+  ['partner', 'Partner requests', 'When someone asks to team up with you'],
+  ['tomorrow', 'Tournament tomorrow', 'The day before a tournament you marked registered'],
+  ['closing', 'Registration closing', '2 days before sign-up closes, if you haven’t registered yet'],
+  ['early', 'Early-bird price ending', 'The day before the price goes up'],
+  ['changes', 'Changes', 'Price, dates or registration changed (off to start)']
+];
+const pushState = { checked: false, supported: false, on: false, busy: false };
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+function b64u(s){ const p = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); }
+async function checkPush(){
+  pushState.supported = pushSupported();
+  if(!pushState.supported){ pushState.checked = true; return; }
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    const sub = reg && await reg.pushManager.getSubscription();
+    pushState.on = !!sub && Notification.permission === 'granted';
+  } catch(e){ pushState.on = false; }
+  pushState.checked = true;
+}
+async function enablePush(){
+  if(!pushSupported()){
+    if(isIOS() && !isStandalone()){ toast('On iPhone, add Bracket to your Home Screen first. Then turn notifications on.'); openInstall(); }
+    else toast('This browser can’t show notifications.');
+    return;
+  }
+  if(!acct.user){ toast('Sign in first, so Bracket knows which tournaments to tell you about.'); setTimeout(signIn, 900); return; }
+  if(!ui.config || !ui.config.push){ toast('Notifications aren’t set up yet.'); return; }
+  pushState.busy = true; renderSettings();
+  try {
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){
+      toast(perm === 'denied' ? 'Notifications are blocked for Bracket. Turn them on in your phone’s Settings → Notifications → Bracket.' : 'Notifications weren’t turned on.');
+      return;
+    }
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(ui.config.push) }));
+    const j = sub.toJSON();
+    const { error } = await sb.from('bracket_push_subs').upsert({ user_id: acct.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' });
+    if(error) throw error;
+    pushState.on = true;
+    toast('Notifications are on for this device.');
+  } catch(e){
+    toast('Couldn’t turn on notifications. Please try again.');
+  } finally { pushState.busy = false; renderSettings(); }
+}
+async function disablePush(){
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    const sub = reg && await reg.pushManager.getSubscription();
+    if(sub){ if(sb && acct.user) await sb.from('bracket_push_subs').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  } catch(e){}
+  pushState.on = false; renderSettings(); toast('Notifications are off for this device.');
+}
+async function testPush(btn){
+  if(!acct.session) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + acct.session.access_token }, body: JSON.stringify({ action: 'test' }) });
+    const j = await r.json().catch(() => ({}));
+    toast(r.ok && j.sent ? 'Sent! It should pop up in a few seconds.' : (j.error || 'Couldn’t send a test right now.'));
+  } catch(e){ toast('Couldn’t reach Bracket.'); }
+  btn.disabled = false;
+}
+// Per-tournament alerts, stored on the saved tournament so they sync with everything else
+function savedAlerts(slug){ const s = SAVES.registered[slug] || SAVES.interested[slug]; return s ? (s.alerts == null ? null : s.alerts) : undefined; }
+function alertOn(slug, k){ const a = savedAlerts(slug); if(a === 'off') return false; return a && typeof a === 'object' && a[k] != null ? !!a[k] : !!S.notify[k]; }
+function setAlerts(slug, val){
+  ['interested', 'registered'].forEach(kind => { const s = SAVES[kind][slug]; if(s){ if(val == null) delete s.alerts; else s.alerts = val; } });
+  saveSaves();
+}
+function alertsLabel(slug){
+  const a = savedAlerts(slug);
+  if(a === undefined) return 'Alerts';
+  if(a === 'off') return 'Alerts off';
+  return a && Object.keys(a).length ? 'Alerts: custom' : 'Alerts on';
+}
+let alertSheet = null;
+function alertsBody(slug){
+  const saved = savedAlerts(slug) !== undefined;
+  const reg = !!SAVES.registered[slug];
+  if(!saved) return `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-md)">Alerts work for tournaments you save. Tap ☆ to save this one, then choose what you want to hear about.</p><button class="btn primary wide" data-act="alerts-save" data-slug="${esc(slug)}">${icon('star')}Save this tournament</button>`;
+  const a = savedAlerts(slug);
+  const types = NOTIFY_TYPES.filter(([k]) => k !== 'partner' && !(k === 'tomorrow' && !reg) && !(k === 'closing' && reg));
+  let h = '';
+  if(!pushState.on) h += `<div class="banner" style="margin-top:0">${icon('bell')}<div><b>Notifications are off on this device.</b><button data-act="go-notify">Turn them on</button></div></div>`;
+  h += `<div class="group" style="margin-top:12px"><div class="gitem noicon"><span class="t">Alerts for this tournament</span>${swHTML('alert-all', a !== 'off', 'Alerts for this tournament')}</div></div>`;
+  if(a !== 'off'){
+    h += `<div class="group-l">What to tell me</div><div class="group">${types.map(([k, name, sub]) => `<div class="gitem noicon"><span class="t">${name}<small>${sub}</small></span>${swHTML('alert-k', alertOn(slug, k), name).replace('data-act="alert-k"', `data-act="alert-k" data-k="${k}" data-slug="${esc(slug)}"`)}</div>`).join('')}</div>`;
+    h += `<p class="gfoot">These start from your Notifications settings. Changes here only affect this tournament.${a && typeof a === 'object' && Object.keys(a).length ? ` <button class="linkbtn" data-act="alerts-reset" data-slug="${esc(slug)}">Use my settings</button>` : ''}</p>`;
+  }
+  return h.replace('data-act="alert-all"', `data-act="alert-all" data-slug="${esc(slug)}"`);
+}
+function openAlerts(slug){
+  alertSheet = openSheet({ title: 'Alerts', body: `<p class="hint" style="margin:0 2px 12px;font-size:var(--t-sm)">${esc((findT(slug) || {}).title || '')}</p><div data-abody>${alertsBody(slug)}</div>`, onClose: () => { alertSheet = null; } });
+  alertSheet.dataset.slug = slug;
+}
+function refreshAlertSheet(){ if(alertSheet){ const b = $('[data-abody]', alertSheet); if(b) b.innerHTML = alertsBody(alertSheet.dataset.slug); } }
 
 /* ---------------- Config + stale-app check ---------------- */
 async function loadConfig(){
@@ -1844,6 +1977,13 @@ async function signIn(){
 async function signOut(){
   if(!sb) return;
   S.syncedUser = null; S.syncDirty = false; save(LS.settings, S);
+  // Signed out = no more alerts on this device (they're tied to the account's saves)
+  try {
+    const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration('/');
+    const sub = reg && await reg.pushManager.getSubscription();
+    if(sub){ await sb.from('bracket_push_subs').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  } catch(e){}
+  pushState.on = false;
   try { await sb.auth.signOut(); } catch(e){}
   setSession(null); acct.mirror = null; acct.lastSync = 0;
   partner.myPosts = []; partner.inbox = []; partner.sent = []; renderBadge();
@@ -1898,7 +2038,9 @@ async function pullSync(){
       } else {
         S.rating = p.rating != null ? +p.rating : null; S.home = p.home || null; if(p.fit != null) S.fit = p.fit;
         if(pr) RKINDS.forEach(k => { S.ratings[k[0]] = pr[k[0]] != null ? +pr[k[0]] : null; });
+        if(p.notify && typeof p.notify === 'object') S.notify = Object.assign({}, NOTIFY_DEFAULTS, p.notify);
       }
+      if(first && p.notify && typeof p.notify === 'object' && !S.notifyTouched) S.notify = Object.assign({}, NOTIFY_DEFAULTS, p.notify);
     }
     S.syncedUser = uid; S.syncDirty = false; save(LS.settings, S);
     acct.profSent = null;   // pushProfile compares and skips if nothing changed on the server side next time
@@ -1948,14 +2090,15 @@ function scheduleProfile(){
 }
 async function pushProfile(){
   if(!sb || !acct.user) return;
-  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false, ratings: S.ratings };
+  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false, ratings: S.ratings, notify: S.notify };
   const key = JSON.stringify(body);
   if(key === acct.profSent) return;
   try {
-    let { error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, body), { onConflict: 'user_id' });
-    if(error && /ratings/i.test(error.message || '')){   // 3-ratings.sql not run yet: sync the rest
-      const b2 = Object.assign({}, body); delete b2.ratings;
-      ({ error } = await sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, b2), { onConflict: 'user_id' }));
+    const up = b => sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, b), { onConflict: 'user_id' });
+    let { error } = await up(body);
+    // A newer column whose SQL hasn't been run yet (ratings: 3-ratings.sql, notify: 4-notifications.sql): sync the rest
+    for(const col of ['notify', 'ratings']){
+      if(error && new RegExp(col, 'i').test(error.message || '')){ const b2 = Object.assign({}, body); delete b2.notify; if(col === 'ratings') delete b2.ratings; ({ error } = await up(b2)); }
     }
     if(error) throw error;
     acct.profSent = key;
@@ -2402,7 +2545,7 @@ function toggleInterested(slug){
     toast('Removed from Interested', () => { SAVES.interested[slug] = prev; saveSaves(); afterSaveChange(); });
   } else {
     if(t.placeholder) return;
-    SAVES.interested[slug] = snap(t); saveSaves();
+    SAVES.interested[slug] = withAlerts(snap(t), SAVES.registered[slug]); saveSaves();
     toast('Saved to Interested');
   }
   afterSaveChange();
@@ -2415,7 +2558,7 @@ function toggleRegistered(slug){
     toast('No longer marked registered', () => { SAVES.registered[slug] = prev; saveSaves(); afterSaveChange(); });
   } else {
     if(t.placeholder) return;
-    SAVES.registered[slug] = snap(t); saveSaves();
+    SAVES.registered[slug] = withAlerts(snap(t), SAVES.interested[slug]); saveSaves();
     toast("Marked as registered. You'll find it in Mine.");
   }
   afterSaveChange();
@@ -2560,6 +2703,22 @@ document.addEventListener('click', e => {
     case 'share-app': shareApp(); break;
     case 'addcal': openAddCal(slug); break;
     case 'install': openInstall(); break;
+    case 'sp-notify': openSPage('notify'); break;
+    case 'go-notify': goSettingsPage('notify'); break;
+    case 'sw-push': if(pushState.on) disablePush(); else enablePush(); break;
+    case 'push-test': testPush(el); break;
+    case 'sw-notify': { const k = el.dataset.k; S.notify[k] = !S.notify[k]; el.setAttribute('aria-checked', S.notify[k]); saveSettings(); break; }
+    case 'alerts': openAlerts(slug); break;
+    case 'alerts-save': toggleInterested(slug); refreshAlertSheet(); break;
+    case 'alerts-reset': setAlerts(slug, null); refreshAlertSheet(); refreshOpenDetail(); break;
+    case 'alert-all': { const a = savedAlerts(slug); setAlerts(slug, a === 'off' ? null : 'off'); refreshAlertSheet(); refreshOpenDetail(); break; }
+    case 'alert-k': {
+      const k = el.dataset.k, cur = savedAlerts(slug);
+      const next = Object.assign({}, cur && typeof cur === 'object' ? cur : {});
+      next[k] = !alertOn(slug, k);
+      if(next[k] === !!S.notify[k]) delete next[k];
+      setAlerts(slug, Object.keys(next).length ? next : null); refreshAlertSheet(); refreshOpenDetail(); break;
+    }
     case 'signin': signIn(); break;
     case 'signout': signOut(); break;
     case 'del-account': deleteAccount(); break;
@@ -2707,6 +2866,10 @@ document.addEventListener('visibilitychange', () => {
   saveSettings();
   renderAll(); updateBars();
   if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
+  // Notifications: the service worker shows them; a partner-request alert opens /?mine=1
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  checkPush();
+  if(/[?&]mine=1/.test(location.search)){ history.replaceState(null, '', '/'); setTab('mine'); }
   // Shared links: /t/<slug>, ?t=<slug> or #t=<slug>. Someone new sees the tournament first, the welcome after.
   const m = /^\/t\/([a-z0-9-]+)/i.exec(location.pathname) || /[?#&]t=([a-z0-9-]+)/i.exec(location.search + location.hash);
   if(m){

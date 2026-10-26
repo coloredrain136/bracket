@@ -4,7 +4,9 @@
     "api/tournaments.js": { "maxDuration": 45 },
     "api/tournament.js": { "maxDuration": 30 },
     "api/share.js": { "maxDuration": 20, "includeFiles": "index.html" },
-    "api/ics.js": { "maxDuration": 20 }
+    "api/ics.js": { "maxDuration": 20 },
+    "api/cron.js": { "maxDuration": 60 },
+    "api/push.js": { "maxDuration": 20 }
   },
   "rewrites": [
     { "source": "/t/:slug", "destination": "/api/share?slug=:slug" }
