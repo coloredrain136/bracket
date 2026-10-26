@@ -34,3 +34,21 @@ export async function sbDeleteUser(id){
   const r = await fetch(`${SB_URL()}/auth/v1/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', headers: adminHeaders() });
   if(!r.ok && r.status !== 404) throw new Error('delete user ' + r.status + ' ' + (await r.text()).slice(0, 200));
 }
+
+// Server-side reads/writes with the secret key (bypasses Row Level Security; server only)
+export async function sbGet(path){
+  const r = await fetch(`${SB_URL()}/rest/v1/${path}`, { headers: adminHeaders() });
+  if(!r.ok) throw new Error('get ' + path.split('?')[0] + ' ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  return r.json();
+}
+// Insert rows, skipping ones that already exist; returns only the rows that were new
+export async function sbInsertNew(table, rows){
+  if(!rows.length) return [];
+  const r = await fetch(`${SB_URL()}/rest/v1/${table}`, { method: 'POST', headers: adminHeaders({ Prefer: 'resolution=ignore-duplicates,return=representation' }), body: JSON.stringify(rows) });
+  if(!r.ok) throw new Error('insert ' + table + ' ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  return r.json();
+}
+export async function sbDelete(path){
+  const r = await fetch(`${SB_URL()}/rest/v1/${path}`, { method: 'DELETE', headers: adminHeaders() });
+  if(!r.ok) throw new Error('delete ' + r.status);
+}

@@ -4,7 +4,7 @@
 // pickleballtournaments.com nothing), then from the tournament page itself.
 import { getTournamentPage } from './pt.js';
 
-export const APP_VERSION = 'bracket-9';   // keep in step with VERSION in index.html
+export const APP_VERSION = 'bracket-10';   // keep in step with VERSION in index.html
 
 export function origin(req){
   const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost';
