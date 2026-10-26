@@ -11,7 +11,7 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 - `vercel.json`: time limits for the tournament routes, and `noindex` on every page so Bracket stays out of search results.
 
 ## On each phone (localStorage)
-- `bracket_settings`: home location, level, filters, looks, Mine tab
+- `bracket_settings`: home location, rating, Fit for you on/off, List or Calendar, filters (incl. weekend / dates, level fit / up), looks, text size, Mine tab
 - `bracket_saves`: `{ interested: {slug: snapshot}, registered: {slug: snapshot} }`
 - `bracket_list`: last tournament list (opens instantly, shown if the data source is down)
 - `bracket_details`: last 30 tournament details

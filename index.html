@@ -16,22 +16,23 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>
-/* Looks before first paint: light / dark / auto, theme-color and the iPhone status bar style */
+/* Looks before first paint: light / dark / auto, text size, theme-color and the iPhone status bar style */
 (function(){
   var KEY = 'bracket_settings';
-  window.BracketLooks = function(mode){
+  window.BracketLooks = function(mode, size){
     var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
     var root = document.documentElement;
     root.setAttribute('data-mode', dark ? 'dark' : 'light');
+    if(size) root.setAttribute('data-size', size);
     var tc = document.querySelector('meta[name="theme-color"]');
     if(tc) tc.setAttribute('content', dark ? '#07120c' : '#eef4f0');
     var sb = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if(sb) sb.setAttribute('content', dark ? 'black-translucent' : 'default');
     return dark;
   };
-  var mode = 'auto';
-  try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); if(s && s.mode) mode = s.mode; } catch(e){}
-  window.BracketLooks(mode);
+  var mode = 'auto', size = 'm';
+  try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); if(s && s.mode) mode = s.mode; if(s && s.size) size = s.size; } catch(e){}
+  window.BracketLooks(mode, size);
 })();
 </script>
 <style>
@@ -48,18 +49,23 @@
   --fast: .18s; --mid: .32s; --slow: .45s;
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --t-xs:11px; --t-sm:13px; --t-md:15px; --t-lg:17px; --t-xl:22px; --t-2xl:30px;
-  --tab-h: 64px;
+  --t-xs:12.5px; --t-sm:14px; --t-md:16px; --t-lg:18px; --t-xl:23px; --t-2xl:34px;
+  --tab-h: 66px;
   --q1:#FF453A; --q2:#FF9F0A; --q3:#FFD60A; --q4:#34C759; --q5:#1FB24A;
+  --blue:#3b9dff;
+  --z: 1;
 }
+html[data-size="l"]{ --z: 1.1; }
+html[data-size="xl"]{ --z: 1.22; }
 html[data-mode="dark"]{
   color-scheme: dark;
   --bg:#07120c; --bg2:#0b1d13;
-  --text:#eef6f0; --sub:rgba(232,244,236,.64); --faint:rgba(232,244,236,.40);
+  --text:#eef6f0; --sub:rgba(232,244,236,.68); --faint:rgba(232,244,236,.42);
   --accent:#30D158; --accent-ink:#03220e; --accent-text:#47e070; --accent-soft:rgba(48,209,88,.16);
-  --g-fill:rgba(255,255,255,.075); --g-strong:rgba(20,34,26,.72); --g-stroke:rgba(255,255,255,.13); --g-hi:rgba(255,255,255,.22);
+  --g-fill:rgba(255,255,255,.075); --g-strong:rgba(20,34,26,.74); --g-stroke:rgba(255,255,255,.13); --g-hi:rgba(255,255,255,.22);
+  --glassbar:rgba(7,18,12,.66);
   --card:rgba(255,255,255,.055); --card-hover:rgba(255,255,255,.085); --card-stroke:rgba(255,255,255,.085);
-  --sheet:rgba(16,28,21,.82); --scrim:rgba(0,0,0,.5);
+  --sheet:rgba(16,28,21,.86); --scrim:rgba(0,0,0,.5);
   --seg-bg:rgba(255,255,255,.07); --seg-thumb:rgba(255,255,255,.17);
   --line:rgba(255,255,255,.09); --seg-empty:rgba(255,255,255,.14);
   --shadow:0 12px 34px rgba(0,0,0,.42); --shadow-sm:0 4px 14px rgba(0,0,0,.28);
@@ -71,11 +77,12 @@ html[data-mode="dark"]{
 html[data-mode="light"]{
   color-scheme: light;
   --bg:#eef4f0; --bg2:#e2ece6;
-  --text:#0b1a11; --sub:rgba(11,26,17,.62); --faint:rgba(11,26,17,.40);
+  --text:#0b1a11; --sub:rgba(11,26,17,.66); --faint:rgba(11,26,17,.42);
   --accent:#2ccb55; --accent-ink:#03250f; --accent-text:#12803a; --accent-soft:rgba(32,170,72,.13);
-  --g-fill:rgba(255,255,255,.62); --g-strong:rgba(250,253,251,.82); --g-stroke:rgba(255,255,255,.9); --g-hi:rgba(255,255,255,1);
-  --card:rgba(255,255,255,.74); --card-hover:rgba(255,255,255,.92); --card-stroke:rgba(10,40,20,.07);
-  --sheet:rgba(247,251,248,.88); --scrim:rgba(10,25,15,.28);
+  --g-fill:rgba(255,255,255,.62); --g-strong:rgba(250,253,251,.84); --g-stroke:rgba(255,255,255,.9); --g-hi:rgba(255,255,255,1);
+  --glassbar:rgba(238,244,240,.72);
+  --card:rgba(255,255,255,.76); --card-hover:rgba(255,255,255,.94); --card-stroke:rgba(10,40,20,.07);
+  --sheet:rgba(247,251,248,.9); --scrim:rgba(10,25,15,.28);
   --seg-bg:rgba(10,40,20,.07); --seg-thumb:rgba(255,255,255,.98);
   --line:rgba(10,40,20,.09); --seg-empty:rgba(10,40,20,.12);
   --shadow:0 12px 34px rgba(20,60,35,.14); --shadow-sm:0 3px 12px rgba(20,60,35,.09);
@@ -84,27 +91,37 @@ html[data-mode="light"]{
   --warn-bg:rgba(255,149,0,.13); --warn-text:#a65b00;
   --danger:#e0362b;
   --q3:#e6b800;
+  --blue:#0a63c9;
 }
 
 /* ============ Base ============ */
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+/* manipulation = no double-tap zoom; pinch zoom still works */
+html{ touch-action:manipulation; }
 html,body{ margin:0; background:var(--bg); color:var(--text); }
-body{ font:var(--t-md)/1.4 var(--font); min-height:100vh; min-height:100dvh; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+body{ font:var(--t-md)/1.42 var(--font); min-height:100vh; min-height:100dvh; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
 html.locked, html.locked body{ overflow:hidden; }
+button, a, input, select, label{ touch-action:manipulation; }
 button{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
-input{ font:inherit; color:inherit; }
+input, select{ font:inherit; color:inherit; }
 a{ color:var(--accent-text); text-decoration:none; }
 svg.i{ width:20px; height:20px; flex:none; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
 .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 [hidden]{ display:none !important; }
+/* Text size (Settings → Appearance) */
+main, .sheet-body, .sheet-foot, .sheet-title, #panel .sheet-body, #panel .sheet-foot, .wcard{ zoom:var(--z); }
 
-/* Wallpaper: green wash + faint bracket lines, gives the glass something to blur */
 #wall{ position:fixed; inset:0; z-index:-1; pointer-events:none;
   background:
     radial-gradient(60% 45% at 92% 0%, var(--wash1), transparent 70%),
     radial-gradient(55% 40% at 0% 100%, var(--wash2), transparent 70%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
 #wall::after{ content:""; position:absolute; inset:-10% -20%; background:var(--lines) no-repeat; background-size:min(1100px, 190vw) auto; background-position:70% 18%; transform:rotate(-8deg); }
+
+/* Frosted strip behind the iPhone status bar once you scroll */
+#sbar{ position:fixed; top:0; left:0; right:0; height:var(--sat); z-index:35; pointer-events:none; opacity:0; transition:opacity var(--fast);
+  background:var(--glassbar); -webkit-backdrop-filter:blur(20px) saturate(170%); backdrop-filter:blur(20px) saturate(170%); }
+#sbar.on{ opacity:1; }
 
 /* ============ Glass ============ */
 .glass{
@@ -122,68 +139,69 @@ main{ max-width:680px; margin:0 auto; padding:0 var(--s4) calc(var(--tab-h) + va
 .view.on{ display:block; animation:fade .28s var(--ease); }
 @keyframes fade{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
 
-.top{ display:flex; align-items:center; gap:var(--s3); padding:calc(var(--sat) + 14px) 2px 10px; }
-.brand{ display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
-.brand .mark{ width:38px; height:38px; flex:none; border-radius:11px; box-shadow:var(--shadow-sm); }
+.top{ display:flex; align-items:flex-end; gap:var(--s3); padding:calc(var(--sat) + 18px) 4px 12px; }
+.brand{ flex:1; min-width:0; }
 .brand h1{ margin:0; font:800 var(--t-2xl)/1 var(--display); letter-spacing:-.02em; }
-.brand p{ margin:3px 0 0; font-size:var(--t-xs); color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.round{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; flex:none; }
+.brand p{ margin:5px 0 0; font-size:var(--t-sm); color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.round{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; flex:none; }
 .round:active{ transform:scale(.94); }
 .spin svg{ animation:spin .9s linear infinite; }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
-/* Sticky search bar. The top padding covers the status bar when stuck; the negative margin keeps it from adding space when resting. */
-.bar{ position:sticky; top:0; z-index:20; margin:calc(-1 * var(--sat) - 6px) calc(var(--s4) * -1) 0; padding:calc(var(--sat) + 8px) var(--s4) 10px; pointer-events:none; }
-.bar > *{ pointer-events:auto; }
-.bar::before{ content:""; position:absolute; inset:0 0 -18px; z-index:-1; background:linear-gradient(180deg, var(--bg) 0%, var(--bg) calc(100% - 20px), transparent 100%); opacity:1; transition:opacity var(--fast); }
-.bar.at-top::before{ opacity:0; }
-.search{ display:flex; align-items:center; gap:8px; height:44px; padding:0 12px; border-radius:var(--r-md); }
+/* Sticky search bar. It sits below the header (never on top of it) and turns frosted once stuck. */
+.bar{ position:sticky; top:var(--sat); z-index:20; margin:0 calc(var(--s4) * -1); padding:8px var(--s4) 10px; }
+.bar::before{ content:""; position:absolute; inset:0; z-index:-1; opacity:0; transition:opacity var(--fast);
+  background:var(--glassbar); -webkit-backdrop-filter:blur(20px) saturate(170%); backdrop-filter:blur(20px) saturate(170%); border-bottom:1px solid var(--line); }
+.bar.stuck::before{ opacity:1; }
+.search{ display:flex; align-items:center; gap:8px; height:48px; padding:0 14px; border-radius:var(--r-md); }
 .search svg{ color:var(--faint); }
-.search input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font-size:16px; }
+.search input{ flex:1; min-width:0; border:0; outline:0; background:transparent; font-size:17px; }
 .search input::placeholder{ color:var(--faint); }
-.search .x{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; color:var(--sub); }
+.search input::-webkit-search-cancel-button{ display:none; }
+.search .x{ width:28px; height:28px; border-radius:50%; display:grid; place-items:center; color:var(--sub); }
 .search .x svg{ width:16px; height:16px; }
 
 .chips{ display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:6px calc(var(--s4) * -1) -4px; padding:4px var(--s4) 6px; }
 .chips::-webkit-scrollbar{ display:none; }
-.chip{ display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 13px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; white-space:nowrap; flex:none; }
+.chip{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; white-space:nowrap; flex:none; }
 .chip svg{ width:16px; height:16px; }
-.chip .n{ min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-size:11px; display:grid; place-items:center; }
+.chip .n{ min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; display:grid; place-items:center; }
 .chip.on{ background:var(--accent-soft); border-color:transparent; color:var(--accent-text); box-shadow:none; }
 .chip .cx{ display:grid; place-items:center; margin-right:-5px; opacity:.75; }
 .chip .cx svg{ width:14px; height:14px; }
 .chip.plain{ background:var(--seg-bg); border:0; }
 .chip.plain[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+.chip:disabled{ opacity:.45; }
 
-.meta-line{ display:flex; justify-content:space-between; gap:12px; margin:6px 2px 4px; font-size:var(--t-xs); color:var(--sub); }
+.viewrow{ margin:12px 0 2px; }
+.viewrow .meta{ margin:8px 4px 0; font-size:var(--t-xs); color:var(--sub); }
 
-.banner{ display:flex; gap:10px; align-items:flex-start; margin:10px 0 4px; padding:12px 14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); }
+.banner{ display:flex; gap:10px; align-items:flex-start; margin:12px 0 4px; padding:12px 14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); }
 .banner b{ display:block; }
 .banner button{ font-weight:700; text-decoration:underline; color:inherit; }
 
 /* ============ List + cards ============ */
-.month{ margin:22px 4px 10px; font:800 var(--t-lg)/1.1 var(--display); letter-spacing:-.01em; display:flex; align-items:baseline; gap:8px; }
-.month small{ font:600 var(--t-xs) var(--font); color:var(--faint); }
+.month{ margin:24px 4px 10px; font:800 var(--t-xl)/1.1 var(--display); letter-spacing:-.01em; display:flex; align-items:baseline; gap:8px; }
+.month small{ font:600 var(--t-sm) var(--font); color:var(--faint); }
 .cards{ display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
-.card{ position:relative; display:flex; gap:14px; padding:14px 14px 13px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--card-stroke); cursor:pointer; transition:transform var(--fast) var(--ease), background var(--fast); text-align:left; width:100%; }
+.card{ position:relative; display:flex; gap:14px; padding:15px 14px 14px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--card-stroke); cursor:pointer; transition:transform var(--fast) var(--ease), background var(--fast); text-align:left; width:100%; }
 .card:hover{ background:var(--card-hover); }
 .card:active{ transform:scale(.985); }
 .card.sel{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
-.date{ width:56px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 0; border-radius:var(--r-md); background:var(--accent-soft); color:var(--accent-text); align-self:flex-start; }
-.date .m{ font:800 11px/1 var(--font); letter-spacing:.08em; }
-.date .d{ font:800 22px/1.05 var(--display); margin-top:3px; letter-spacing:-.03em; color:var(--text); }
-.date .d.long{ font-size:17px; }
-.date .w{ font:600 10.5px/1 var(--font); margin-top:4px; color:var(--sub); text-align:center; padding:0 2px; }
+.date{ width:60px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:9px 0; border-radius:var(--r-md); background:var(--accent-soft); color:var(--accent-text); align-self:flex-start; }
+.date .m{ font:800 12px/1 var(--font); letter-spacing:.08em; }
+.date .d{ font:800 24px/1.05 var(--display); margin-top:3px; letter-spacing:-.03em; color:var(--text); }
+.date .d.long{ font-size:18px; }
+.date .w{ font:600 11.5px/1 var(--font); margin-top:4px; color:var(--sub); text-align:center; padding:0 2px; }
 .card .body{ flex:1; min-width:0; }
-.kick{ font-size:var(--t-xs); color:var(--sub); font-weight:600; display:flex; gap:6px; align-items:center; }
+.kick{ font-size:var(--t-sm); color:var(--sub); font-weight:600; display:flex; gap:6px; align-items:center; }
 .kick .dot{ width:3px; height:3px; border-radius:50%; background:var(--faint); }
-.card h3{ margin:3px 34px 6px 0; font:700 var(--t-lg)/1.22 var(--display); letter-spacing:-.01em; overflow-wrap:anywhere; }
-.tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
-.tag{ display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 8px; border-radius:7px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+.card h3{ margin:3px 36px 7px 0; font:700 var(--t-lg)/1.24 var(--display); letter-spacing:-.01em; overflow-wrap:anywhere; }
+.tags{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.tag{ display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 9px; border-radius:7px; font-size:12.5px; font-weight:700; white-space:nowrap; }
 .tag.open{ background:rgba(52,199,89,.15); color:var(--accent-text); }
 .tag.closing{ background:rgba(255,159,10,.16); color:var(--warn-text); }
-.tag.soon{ background:rgba(10,132,255,.15); color:#3b9dff; }
-html[data-mode="light"] .tag.soon{ color:#0a63c9; }
+.tag.soon{ background:rgba(10,132,255,.15); color:var(--blue); }
 .tag.closed{ background:var(--seg-bg); color:var(--sub); }
 .tag.live{ background:rgba(255,69,58,.15); color:#ff6b61; }
 html[data-mode="light"] .tag.live{ color:#d12d22; }
@@ -193,73 +211,116 @@ html[data-mode="light"] .tag.live{ color:#d12d22; }
 .tag.prize{ background:rgba(255,214,10,.16); color:#e9c21c; }
 html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .tag.info{ background:var(--seg-bg); color:var(--sub); }
-.fmt{ font-size:var(--t-sm); color:var(--sub); margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fmt{ font-size:var(--t-sm); color:var(--sub); margin-bottom:8px; overflow-wrap:anywhere; }
+.lv{ font-weight:700; color:var(--accent-text); }
+.lv.up{ color:var(--blue); }
+.lv.no{ color:var(--faint); font-weight:600; }
 .foot{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:var(--t-sm); color:var(--sub); }
 .foot b{ color:var(--text); font-weight:700; }
+.price{ margin-top:6px; font-size:var(--t-sm); font-weight:700; color:var(--text); }
 .foot .sep{ width:3px; height:3px; border-radius:50%; background:var(--faint); }
 .meter{ display:inline-flex; gap:2.5px; align-items:center; }
 .meter i{ width:12px; height:5px; border-radius:3px; background:var(--seg-empty); }
 .meter.big i{ width:28px; height:8px; border-radius:4px; }
 .meter[data-q="1"] i.f{ background:var(--q1); } .meter[data-q="2"] i.f{ background:var(--q2); } .meter[data-q="3"] i.f{ background:var(--q3); }
 .meter[data-q="4"] i.f{ background:var(--q4); } .meter[data-q="5"] i.f{ background:var(--q5); }
-.star{ position:absolute; top:8px; right:8px; width:38px; height:38px; display:grid; place-items:center; border-radius:50%; color:var(--faint); }
-.star svg{ width:22px; height:22px; }
+.star{ position:absolute; top:8px; right:8px; width:42px; height:42px; display:grid; place-items:center; border-radius:50%; color:var(--faint); }
+.star svg{ width:24px; height:24px; }
 .star[aria-pressed="true"]{ color:#FFCC00; }
 .star[aria-pressed="true"] svg{ fill:#FFCC00; stroke:#e0b000; }
 .star:active svg{ transform:scale(.85); }
 .end-note{ margin:28px 8px 8px; text-align:center; font-size:var(--t-xs); color:var(--faint); line-height:1.5; }
 
-.empty{ text-align:center; padding:48px 24px; color:var(--sub); }
+.empty{ text-align:center; padding:44px 22px; color:var(--sub); }
 .empty .ico{ width:64px; height:64px; margin:0 auto 14px; border-radius:20px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-text); }
 .empty .ico svg{ width:30px; height:30px; }
 .empty h3{ margin:0 0 6px; color:var(--text); font:700 var(--t-lg) var(--display); }
-.empty p{ margin:0 auto 16px; max-width:300px; font-size:var(--t-sm); }
+.empty p{ margin:0 auto 16px; max-width:310px; font-size:var(--t-sm); }
+.empty.sm{ padding:22px 16px; }
 
-.skel{ height:118px; border-radius:var(--r-lg); background:linear-gradient(100deg, var(--card) 30%, var(--card-hover) 50%, var(--card) 70%); background-size:300% 100%; animation:shim 1.3s infinite linear; border:1px solid var(--card-stroke); }
+.skel{ height:122px; border-radius:var(--r-lg); background:linear-gradient(100deg, var(--card) 30%, var(--card-hover) 50%, var(--card) 70%); background-size:300% 100%; animation:shim 1.3s infinite linear; border:1px solid var(--card-stroke); }
 .skel.sm{ height:64px; }
 @keyframes shim{ from{ background-position:100% 0; } to{ background-position:-100% 0; } }
 
+/* ============ Calendar ============ */
+.cal{ margin-top:14px; padding:14px 12px 12px; border-radius:var(--r-xl); background:var(--card); border:1px solid var(--card-stroke); }
+.cal-head{ display:flex; align-items:center; gap:8px; margin:0 4px 10px; }
+.cal-head h2{ flex:1; margin:0; font:800 var(--t-xl)/1.1 var(--display); }
+.cal-head h2{ text-align:center; }
+.cal-head h2 small{ display:block; font:600 var(--t-sm) var(--font); color:var(--sub); margin-top:3px; }
+.navbtn{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:var(--seg-bg); color:var(--text); }
+.navbtn:disabled{ opacity:.3; }
+.navbtn.prev svg{ transform:rotate(180deg); }
+.cal-grid{ display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:4px; }
+.cal-wd{ text-align:center; font-size:12px; font-weight:800; color:var(--faint); padding:2px 0 6px; letter-spacing:.04em; }
+.cal-wd.we{ color:var(--accent-text); }
+.day{ min-height:56px; border-radius:12px; display:flex; flex-direction:column; align-items:center; padding:7px 0 6px; font:700 17px/1 var(--display); color:var(--text); }
+.day.blank{ visibility:hidden; pointer-events:none; }
+.day.we{ background:var(--seg-bg); }
+.day.past{ color:var(--faint); }
+.day .num{ width:28px; height:28px; display:grid; place-items:center; border-radius:50%; }
+.day.today .num{ box-shadow:inset 0 0 0 2px var(--accent); }
+.day .cnt{ margin-top:auto; min-width:22px; height:19px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font:800 12px/19px var(--font); text-align:center; padding:0 6px; }
+.day .cnt.mine{ background:#FFCC00; color:#3a2c00; }
+.day.sel{ background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent); }
+.day:disabled{ cursor:default; }
+.cal-legend{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:12px 0 2px; font-size:var(--t-xs); color:var(--sub); }
+.cal-legend span{ display:inline-flex; align-items:center; gap:6px; }
+.cal-legend i{ width:16px; height:12px; border-radius:6px; background:var(--accent); display:inline-block; }
+.cal-legend i.mine{ background:#FFCC00; }
+.cal-legend i.we{ background:var(--seg-bg); border:1px solid var(--line); }
+.day-title{ margin:22px 4px 10px; font:800 var(--t-lg)/1.2 var(--display); }
+.day-title small{ display:block; font:600 var(--t-sm) var(--font); color:var(--sub); margin-top:3px; }
+
 /* ============ Buttons ============ */
-.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; height:48px; padding:0 18px; border-radius:var(--r-md); font-weight:700; font-size:var(--t-md); white-space:nowrap; transition:transform var(--fast) var(--ease), opacity var(--fast); }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; height:50px; padding:0 18px; border-radius:var(--r-md); font-weight:700; font-size:var(--t-md); white-space:nowrap; transition:transform var(--fast) var(--ease), opacity var(--fast); }
 .btn:active{ transform:scale(.97); }
 .btn.primary{ background:var(--accent); color:var(--accent-ink); box-shadow:0 6px 18px rgba(48,209,88,.28), inset 0 1px 0 rgba(255,255,255,.35); }
 .btn.ghost{ background:var(--seg-bg); }
 .btn.danger{ background:rgba(255,69,58,.12); color:var(--danger); }
 .btn.wide{ width:100%; }
-.btn.sm{ height:38px; padding:0 14px; font-size:var(--t-sm); border-radius:12px; }
-.btn.on{ background:var(--accent-soft); color:var(--accent-text); }
+.btn.sm{ height:40px; padding:0 14px; font-size:var(--t-sm); border-radius:12px; }
 .btn svg{ width:18px; height:18px; }
 .linkbtn{ color:var(--accent-text); font-weight:600; }
 
 /* ============ Tab bar ============ */
+#tabs{ position:fixed; z-index:40; left:50%; bottom:calc(var(--sab) + 12px); transform:translateX(-50%); width:min(350px, calc(100% - 32px)); height:var(--tab-h); border-radius:var(--r-pill); display:grid; grid-template-columns:repeat(3, 1fr); padding:6px; --i:0; }
 #tabs.glass{ background:linear-gradient(180deg, var(--g-hi) -160%, transparent 60%), var(--g-strong); }
-#tabs{ position:fixed; z-index:40; left:50%; bottom:calc(var(--sab) + 12px); transform:translateX(-50%); width:min(340px, calc(100% - 32px)); height:var(--tab-h); border-radius:var(--r-pill); display:grid; grid-template-columns:repeat(3, 1fr); padding:6px; --i:0; }
 #tabs .thumb{ position:absolute; top:6px; bottom:6px; left:6px; width:calc((100% - 12px) / 3); border-radius:var(--r-pill); background:var(--seg-thumb); box-shadow:inset 0 1px 0 var(--g-hi); transform:translateX(calc(100% * var(--i))); transition:transform var(--slow) var(--spring); }
 html[data-mode="light"] #tabs .thumb{ box-shadow:0 2px 8px rgba(20,60,35,.12); }
-.tab{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10.5px; font-weight:700; color:var(--sub); border-radius:var(--r-pill); transition:color var(--fast); }
-.tab svg{ width:23px; height:23px; }
+.tab{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:11.5px; font-weight:700; color:var(--sub); border-radius:var(--r-pill); transition:color var(--fast); }
+.tab svg{ width:24px; height:24px; }
 .tab[aria-current="true"]{ color:var(--accent-text); }
-.tab .badge{ position:absolute; top:5px; left:calc(50% + 7px); min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--accent); color:var(--accent-ink); font-size:11px; font-weight:800; display:grid; place-items:center; }
+.tab .badge{ position:absolute; top:5px; left:calc(50% + 7px); min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:800; display:grid; place-items:center; }
 
-/* ============ Segmented, switches, sliders ============ */
+/* ============ Segmented, switches, sliders, selects ============ */
 .seg{ position:relative; display:grid; grid-template-columns:repeat(var(--n), minmax(0,1fr)); padding:3px; border-radius:12px; background:var(--seg-bg); }
 .seg .thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / var(--n)); border-radius:9px; background:var(--seg-thumb); box-shadow:inset 0 1px 0 var(--g-hi), 0 2px 8px rgba(0,0,0,.12); transform:translateX(calc(100% * var(--i))); transition:transform var(--mid) var(--spring); }
 .seg.none .thumb{ opacity:0; }
-.seg button{ position:relative; z-index:1; height:34px; font-size:var(--t-sm); font-weight:600; color:var(--sub); border-radius:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; }
-.seg button[aria-pressed="true"]{ color:var(--text); }
-.seg.tall button{ height:38px; }
+.seg button{ position:relative; z-index:1; height:38px; font-size:var(--t-sm); font-weight:600; color:var(--sub); border-radius:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; }
+.seg button[aria-pressed="true"]{ color:var(--text); font-weight:700; }
+.seg.dis{ opacity:.45; pointer-events:none; }
+.seg.tall button{ height:42px; font-size:var(--t-md); display:flex; align-items:center; justify-content:center; gap:7px; }
+.seg.tall button svg{ width:19px; height:19px; }
 
 .sw{ position:relative; width:51px; height:31px; border-radius:16px; background:var(--seg-empty); transition:background var(--mid); flex:none; }
 .sw::after{ content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.2); transition:transform var(--mid) var(--spring); }
 .sw[aria-checked="true"]{ background:var(--accent); }
 .sw[aria-checked="true"]::after{ transform:translateX(20px); }
 
-input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; height:32px; background:transparent; margin:0; --p:50%; }
+input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; height:34px; background:transparent; margin:0; --p:50%; }
 input[type=range]::-webkit-slider-runnable-track{ height:6px; border-radius:3px; background:linear-gradient(90deg, var(--accent) var(--p), var(--seg-empty) var(--p)); }
 input[type=range]::-moz-range-track{ height:6px; border-radius:3px; background:linear-gradient(90deg, var(--accent) var(--p), var(--seg-empty) var(--p)); }
-input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:28px; height:28px; margin-top:-11px; border-radius:50%; background:linear-gradient(180deg, #fff, #f1f5f2); border:.5px solid rgba(0,0,0,.08); box-shadow:0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 #fff; }
-input[type=range]::-moz-range-thumb{ width:28px; height:28px; border-radius:50%; background:#fff; border:.5px solid rgba(0,0,0,.08); box-shadow:0 3px 10px rgba(0,0,0,.25); }
+input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:30px; height:30px; margin-top:-12px; border-radius:50%; background:linear-gradient(180deg, #fff, #f1f5f2); border:.5px solid rgba(0,0,0,.08); box-shadow:0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 #fff; }
+input[type=range]::-moz-range-thumb{ width:30px; height:30px; border-radius:50%; background:#fff; border:.5px solid rgba(0,0,0,.08); box-shadow:0 3px 10px rgba(0,0,0,.25); }
 input[type=range]:disabled{ opacity:.4; }
+
+.selwrap{ position:relative; }
+.selwrap select{ -webkit-appearance:none; appearance:none; width:100%; height:54px; border-radius:var(--r-md); border:0; background:var(--seg-bg); padding:0 44px 0 16px; font:800 21px var(--display); color:var(--text); }
+.selwrap svg{ position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(90deg); color:var(--sub); pointer-events:none; }
+.datein{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.datein label{ font-size:var(--t-xs); font-weight:700; color:var(--sub); display:flex; flex-direction:column; gap:5px; }
+.datein input{ height:46px; border-radius:12px; border:0; background:var(--seg-bg); padding:0 12px; font-size:16px; font-weight:600; width:100%; min-width:0; }
 
 /* ============ Sheets ============ */
 .scrim{ position:fixed; inset:0; z-index:60; background:var(--scrim); opacity:0; transition:opacity var(--mid) var(--ease); }
@@ -273,119 +334,154 @@ input[type=range]:disabled{ opacity:.4; }
 .sheet-title h2{ flex:1; margin:0; font:800 var(--t-xl)/1.1 var(--display); letter-spacing:-.01em; }
 .sheet-body{ flex:1; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:4px 16px 20px; }
 .sheet-foot{ flex:none; padding:12px 16px calc(12px + var(--sab)); border-top:1px solid var(--line); display:flex; gap:10px; align-items:center; background:var(--sheet); }
-.close{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; background:var(--seg-bg); color:var(--sub); flex:none; }
+.close{ width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:var(--seg-bg); color:var(--sub); flex:none; }
 .close svg{ width:17px; height:17px; stroke-width:2.4; }
 
-.fgroup{ margin:14px 0 22px; }
-.fgroup > label, .flabel{ display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-sm); font-weight:700; margin:0 2px 9px; }
-.flabel span{ color:var(--accent-text); font-weight:700; }
-.hint{ font-size:var(--t-xs); color:var(--sub); margin:6px 2px 0; }
+.fgroup{ margin:14px 0 24px; }
+.flabel{ display:flex; justify-content:space-between; align-items:baseline; font-size:var(--t-md); font-weight:700; margin:0 2px 10px; }
+.flabel span{ color:var(--accent-text); font-weight:700; font-size:var(--t-sm); }
+.hint{ font-size:var(--t-xs); color:var(--sub); margin:7px 2px 0; line-height:1.45; }
 .chipset{ display:flex; flex-wrap:wrap; gap:8px; }
-.row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:2px 2px; }
-.row .t{ font-weight:600; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:2px; }
+.row .t{ font-weight:700; }
 .row .s{ font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
+.wkgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+.wk{ text-align:left; padding:10px 12px; border-radius:var(--r-md); background:var(--seg-bg); }
+.wk small{ display:block; font-size:11.5px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.05em; }
+.wk b{ display:block; font:800 16px/1.25 var(--display); margin-top:2px; }
+.wk span{ display:block; font-size:12px; color:var(--sub); margin-top:2px; }
+.wk[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+.wk[aria-pressed="true"] small, .wk[aria-pressed="true"] span{ color:var(--accent-ink); opacity:.8; }
+.wk.zero{ opacity:.55; }
 
 /* ============ Detail ============ */
 .d-kick{ font-size:var(--t-sm); color:var(--sub); font-weight:600; margin:2px 0 4px; }
-.d-title{ margin:0 0 10px; font:800 26px/1.12 var(--display); letter-spacing:-.02em; overflow-wrap:anywhere; }
+.d-title{ margin:0 0 10px; font:800 27px/1.12 var(--display); letter-spacing:-.02em; overflow-wrap:anywhere; }
 .facts{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; }
 .fact{ padding:12px 13px; border-radius:var(--r-md); background:var(--card); border:1px solid var(--card-stroke); min-width:0; }
-.fact .l{ font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); }
-.fact .v{ font:800 19px/1.2 var(--display); margin-top:4px; overflow-wrap:anywhere; }
-.fact .v.sm{ font-size:16px; }
+.fact .l{ font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); }
+.fact .v{ font:800 20px/1.2 var(--display); margin-top:4px; overflow-wrap:anywhere; }
+.fact .v.sm{ font-size:17px; }
 .fact .s{ font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
 .fact .s.up{ color:var(--warn-text); font-weight:600; }
-.blk{ margin:18px 0; padding:14px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--card-stroke); }
-.blk h3{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; font:800 var(--t-md) var(--display); }
+.blk{ margin:16px 0; padding:15px; border-radius:var(--r-lg); background:var(--card); border:1px solid var(--card-stroke); }
+.blk h3{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; font:800 var(--t-lg) var(--display); }
 .blk h3 small{ font:600 var(--t-xs) var(--font); color:var(--sub); }
-.qhead{ display:flex; align-items:center; gap:12px; }
+.blk.fit{ background:linear-gradient(135deg, var(--accent-soft), transparent 70%), var(--card); }
+.qhead{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .qhead b{ font:800 var(--t-lg) var(--display); }
 .reasons{ margin:10px 0 0; padding:0; list-style:none; font-size:var(--t-sm); color:var(--sub); }
 .reasons li{ display:flex; gap:8px; padding:3px 0; }
-.reasons li::before{ content:""; width:5px; height:5px; border-radius:50%; background:var(--accent); margin-top:7px; flex:none; }
+.reasons li::before{ content:""; width:5px; height:5px; border-radius:50%; background:var(--accent); margin-top:8px; flex:none; }
+.fine{ font-size:var(--t-xs); color:var(--faint); margin:10px 0 0; line-height:1.45; }
 .addr{ font-size:var(--t-md); }
 .addr b{ display:block; font-weight:700; margin-bottom:2px; }
 .addr span{ color:var(--sub); font-size:var(--t-sm); }
 .btnrow{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
 .evgroup{ border-top:1px solid var(--line); }
 .evgroup:first-of-type{ border-top:0; }
-.evgroup summary{ list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 2px; font-weight:700; cursor:pointer; }
+.evgroup summary{ list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 2px; font-weight:800; font-size:var(--t-md); cursor:pointer; }
 .evgroup summary::-webkit-details-marker{ display:none; }
 .evgroup summary small{ color:var(--sub); font-weight:600; font-size:var(--t-xs); }
 .evgroup summary svg{ width:16px; height:16px; color:var(--faint); transition:transform var(--fast); }
 .evgroup[open] summary svg{ transform:rotate(90deg); }
-.ev{ display:flex; gap:10px; align-items:center; padding:10px 10px; margin:0 -4px 6px; border-radius:12px; background:var(--seg-bg); }
+.ev{ display:flex; gap:10px; align-items:center; padding:11px 10px; margin:0 -4px 6px; border-radius:12px; background:var(--seg-bg); }
 .ev.mine{ background:var(--accent-soft); box-shadow:inset 0 0 0 1.5px var(--accent); }
+.ev.up{ box-shadow:inset 0 0 0 1.5px var(--blue); }
 .ev .n{ flex:1; min-width:0; }
-.ev .n b{ display:block; font-size:var(--t-sm); font-weight:700; }
-.ev .n span{ display:block; font-size:var(--t-xs); color:var(--sub); margin-top:1px; }
-.ev .c{ text-align:right; flex:none; font-size:var(--t-xs); color:var(--sub); min-width:70px; }
-.ev .c b{ display:block; font-size:var(--t-sm); color:var(--text); }
+.ev .n b{ display:block; font-size:var(--t-md); font-weight:700; }
+.ev .n span{ display:block; font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
+.ev .c{ text-align:right; flex:none; font-size:var(--t-xs); color:var(--sub); min-width:72px; }
+.ev .c b{ display:block; font-size:var(--t-md); color:var(--text); }
 .ev .c .wl{ color:var(--warn-text); font-weight:600; }
 .ev .bar2{ height:4px; border-radius:2px; background:var(--seg-empty); margin-top:4px; overflow:hidden; }
 .ev .bar2 i{ display:block; height:100%; background:var(--accent); border-radius:2px; }
 .ev .bar2 i.full{ background:var(--q2); }
-.ev .n .yl, .yl{ display:inline-block; font-size:10px; font-weight:800; padding:1px 6px; border-radius:5px; background:var(--accent); color:var(--accent-ink); margin-left:6px; vertical-align:1px; }
+.yl{ display:inline-block; font:800 10.5px/1 var(--font); padding:4px 7px; border-radius:6px; background:var(--accent); color:var(--accent-ink); margin-left:7px; vertical-align:2px; }
+.yl.up{ background:transparent; color:var(--blue); box-shadow:inset 0 0 0 1.5px var(--blue); }
 .desc{ font-size:var(--t-sm); color:var(--sub); white-space:pre-line; overflow-wrap:anywhere; }
 .desc.clamp{ display:-webkit-box; -webkit-line-clamp:7; -webkit-box-orient:vertical; overflow:hidden; }
 .foot-actions{ display:flex; gap:8px; width:100%; align-items:center; }
 .foot-actions .reg{ flex:1; }
-.iconbtn{ width:48px; height:48px; border-radius:var(--r-md); display:grid; place-items:center; background:var(--seg-bg); flex:none; color:var(--sub); }
-.iconbtn svg{ width:22px; height:22px; }
+.iconbtn{ width:50px; height:50px; border-radius:var(--r-md); display:grid; place-items:center; background:var(--seg-bg); flex:none; color:var(--sub); }
+.iconbtn svg{ width:24px; height:24px; }
 .iconbtn[aria-pressed="true"]{ color:#FFCC00; background:rgba(255,204,0,.14); }
 .iconbtn[aria-pressed="true"] svg{ fill:#FFCC00; stroke:#e0b000; }
-.togbtn{ height:48px; padding:0 14px; border-radius:var(--r-md); background:var(--seg-bg); font-weight:700; font-size:var(--t-sm); display:inline-flex; align-items:center; gap:6px; flex:none; color:var(--sub); }
+.togbtn{ height:50px; padding:0 14px; border-radius:var(--r-md); background:var(--seg-bg); font-weight:700; font-size:var(--t-sm); display:inline-flex; align-items:center; gap:6px; flex:none; color:var(--sub); }
 .togbtn svg{ width:18px; height:18px; }
 .togbtn[aria-pressed="true"]{ background:var(--accent-soft); color:var(--accent-text); }
 .d-error{ padding:14px; border-radius:var(--r-md); background:var(--warn-bg); color:var(--warn-text); font-size:var(--t-sm); margin:14px 0; }
 
-/* ============ Settings ============ */
+/* ============ Settings (iOS style) ============ */
 .big-title{ margin:0; padding:calc(var(--sat) + 18px) 4px 4px; font:800 var(--t-2xl)/1.05 var(--display); letter-spacing:-.02em; }
-.big-sub{ margin:4px 4px 14px; font-size:var(--t-sm); color:var(--sub); }
-.group-l{ margin:22px 16px 7px; font-size:var(--t-xs); font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); }
+.big-sub{ margin:6px 4px 14px; font-size:var(--t-sm); color:var(--sub); }
+.group-l{ margin:24px 16px 8px; font-size:var(--t-xs); font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--faint); }
 .group{ border-radius:var(--r-lg); background:var(--card); border:1px solid var(--card-stroke); overflow:hidden; }
-.gitem{ display:flex; align-items:center; gap:12px; min-height:52px; padding:10px 16px; width:100%; text-align:left; }
-.gitem + .gitem{ border-top:1px solid var(--line); }
-.gitem .t{ flex:1; font-weight:600; }
-.gitem .v{ color:var(--sub); font-size:var(--t-sm); max-width:55%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gfoot{ margin:8px 16px 0; font-size:var(--t-xs); color:var(--sub); line-height:1.45; }
+.gitem{ display:flex; align-items:center; gap:12px; min-height:54px; padding:10px 16px; width:100%; text-align:left; position:relative; }
+.gitem + .gitem::before{ content:""; position:absolute; top:0; right:0; left:58px; height:1px; background:var(--line); }
+.gitem.noicon + .gitem::before, .gitem + .gitem.noicon::before{ left:16px; }
+.gitem .t{ flex:1; font-weight:600; font-size:var(--t-md); }
+.gitem .t small{ display:block; font-weight:500; font-size:var(--t-xs); color:var(--sub); margin-top:2px; }
+.gitem .v{ color:var(--sub); font-size:var(--t-md); max-width:50%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .gitem .chev{ color:var(--faint); width:16px; height:16px; }
 .gitem.col{ flex-direction:column; align-items:stretch; }
-.gitem.col .t{ margin-bottom:8px; }
+.gitem.col .t{ margin-bottom:10px; }
 .gitem p{ margin:0; font-size:var(--t-sm); color:var(--sub); line-height:1.5; }
 .gitem.danger .t{ color:var(--danger); }
-.version{ margin:22px 0 0; text-align:center; font-size:var(--t-xs); color:var(--faint); }
+.tile{ width:30px; height:30px; border-radius:8px; display:grid; place-items:center; color:#fff; flex:none; }
+.tile svg{ width:18px; height:18px; stroke-width:2.1; }
+.tile.green{ background:#30b354; } .tile.blue{ background:#0a84ff; } .tile.orange{ background:#ff9500; } .tile.purple{ background:#8e5cf7; } .tile.gray{ background:#8e8e93; } .tile.teal{ background:#14a8a0; } .tile.yellow{ background:#e9b100; } .tile.red{ background:#ff453a; }
+.version{ margin:24px 0 0; text-align:center; font-size:var(--t-xs); color:var(--faint); }
+.spage-head{ padding:calc(var(--sat) + 10px) 0 0; }
+.back{ display:inline-flex; align-items:center; gap:2px; color:var(--accent-text); font-weight:600; font-size:17px; padding:8px 10px 8px 0; }
+.back svg{ transform:rotate(180deg); width:20px; height:20px; stroke-width:2.4; }
+.spage .big-title{ padding-top:6px; }
+.spage{ animation:slidein .32s var(--ease); }
+@keyframes slidein{ from{ opacity:0; transform:translateX(24px); } to{ opacity:1; transform:none; } }
+.preview{ padding:14px 16px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-md); }
+
+/* Help page */
+.help .group{ padding:16px; }
+.help h3{ margin:0 0 6px; font:800 var(--t-lg) var(--display); }
+.help p{ margin:0 0 10px; font-size:var(--t-md); color:var(--sub); line-height:1.55; }
+.help p:last-child{ margin-bottom:0; }
+.help ul{ margin:0 0 10px; padding-left:20px; color:var(--sub); line-height:1.55; }
+.help .demo{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
+.help .demo-row{ display:flex; align-items:center; gap:10px; margin:6px 0; font-size:var(--t-sm); color:var(--sub); }
+.help .demo-row .tag{ flex:none; }
 
 /* ============ Location picker ============ */
 .citylist{ margin-top:10px; max-height:300px; overflow-y:auto; border-radius:var(--r-md); background:var(--card); border:1px solid var(--card-stroke); overscroll-behavior:contain; }
-.city{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:13px 14px; text-align:left; font-weight:600; }
+.city{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:14px; text-align:left; font-weight:600; font-size:var(--t-md); }
 .city + .city{ border-top:1px solid var(--line); }
 .city svg{ color:var(--accent-text); width:18px; height:18px; }
 .city[aria-pressed="true"]{ color:var(--accent-text); }
 .picked{ display:flex; align-items:center; gap:8px; margin:12px 2px 0; font-weight:700; color:var(--accent-text); font-size:var(--t-sm); }
 .picked svg{ width:18px; height:18px; }
+.or{ text-align:center; font-size:var(--t-xs); color:var(--faint); margin:14px 0 0; font-weight:700; letter-spacing:.06em; }
 
 /* ============ Welcome ============ */
 #welcome{ position:fixed; inset:0; z-index:80; overflow-y:auto; background:var(--bg); padding:calc(var(--sat) + 28px) 20px calc(var(--sab) + 28px); }
 #welcome::before{ content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(70% 45% at 85% 0%, var(--wash1), transparent 70%), radial-gradient(60% 40% at 0% 100%, var(--wash2), transparent 70%); }
 .wcard{ max-width:440px; margin:0 auto; }
 .whero{ text-align:center; margin-bottom:26px; }
-.whero img{ width:84px; height:84px; border-radius:22px; box-shadow:var(--shadow); }
-.whero h1{ margin:16px 0 6px; font:800 34px/1 var(--display); letter-spacing:-.02em; }
-.whero p{ margin:0; color:var(--sub); }
+.whero img{ width:88px; height:88px; border-radius:22px; box-shadow:var(--shadow); }
+.whero h1{ margin:16px 0 6px; font:800 36px/1 var(--display); letter-spacing:-.02em; }
+.whero p{ margin:0; color:var(--sub); font-size:var(--t-md); }
 .wsec{ padding:18px; border-radius:var(--r-xl); margin-bottom:14px; }
 .wsec h2{ margin:0 0 4px; font:800 var(--t-lg) var(--display); }
 .wsec > p{ margin:0 0 14px; font-size:var(--t-sm); color:var(--sub); }
-.or{ text-align:center; font-size:var(--t-xs); color:var(--faint); margin:12px 0 0; font-weight:700; letter-spacing:.06em; }
 .wfoot{ display:flex; flex-direction:column; gap:10px; align-items:center; margin-top:18px; }
 .wfoot .linkbtn{ color:var(--sub); font-size:var(--t-sm); padding:8px; }
-.fine{ font-size:var(--t-xs); color:var(--faint); text-align:center; margin-top:18px; line-height:1.5; }
+.wfine{ font-size:var(--t-xs); color:var(--faint); text-align:center; margin-top:18px; line-height:1.5; }
 
 /* ============ Toast ============ */
-#toast{ position:fixed; z-index:90; left:50%; bottom:calc(var(--sab) + var(--tab-h) + 24px); transform:translate(-50%, 20px); opacity:0; pointer-events:none; display:flex; align-items:center; gap:14px; max-width:calc(100% - 32px); padding:12px 16px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; transition:transform var(--mid) var(--spring), opacity var(--mid); }
+#toast{ position:fixed; z-index:90; left:50%; bottom:calc(var(--sab) + var(--tab-h) + 24px); transform:translate(-50%, 20px); opacity:0; pointer-events:none; display:flex; align-items:center; gap:14px; max-width:calc(100% - 32px); padding:13px 18px; border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; transition:transform var(--mid) var(--spring), opacity var(--mid); }
 #toast.show{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
 #toast button{ color:var(--accent-text); font-weight:800; }
 
-/* ============ Desktop panel ============ */
+/* ============ Desktop ============ */
 #panel{ display:none; }
 @media (min-width: 900px){
   #app{ display:grid; grid-template-columns:96px minmax(0, 600px) minmax(380px, 1fr); gap:0 28px; max-width:1360px; margin:0 auto; padding:0 24px; }
@@ -395,7 +491,6 @@ input[type=range]:disabled{ opacity:.4; }
   .tab{ border-radius:18px; font-size:11.5px; }
   .tab .badge{ top:9px; }
   .top{ padding-top:28px; }
-  .bar{ padding-top:10px; }
   .chips{ flex-wrap:wrap; overflow:visible; }
   #panel{ display:flex; flex-direction:column; position:sticky; top:24px; height:calc(100vh - 48px); margin-top:24px; border-radius:var(--r-xl); overflow:hidden; background:var(--sheet); -webkit-backdrop-filter:blur(30px) saturate(180%); backdrop-filter:blur(30px) saturate(180%); border:1px solid var(--g-stroke); box-shadow:var(--shadow), inset 0 1px 0 var(--g-hi); }
   #panel .p-head{ display:flex; justify-content:flex-end; padding:12px 14px 0; }
@@ -403,7 +498,7 @@ input[type=range]:disabled{ opacity:.4; }
   #panel .sheet-foot{ padding:14px 22px; }
   #panel .p-empty{ margin:auto; text-align:center; color:var(--sub); padding:30px; }
   #panel .p-empty img{ width:72px; height:72px; border-radius:20px; opacity:.85; margin-bottom:12px; }
-  .sheet{ left:50%; right:auto; bottom:auto; top:50%; width:480px; max-height:84vh; border-radius:var(--r-xl); border-bottom:1px solid var(--g-stroke); transform:translate(-50%, -46%) scale(.97); opacity:0; transition:transform var(--mid) var(--ease), opacity var(--mid); }
+  .sheet{ left:50%; right:auto; bottom:auto; top:50%; width:500px; max-height:86vh; border-radius:var(--r-xl); border-bottom:1px solid var(--g-stroke); transform:translate(-50%, -46%) scale(.97); opacity:0; transition:transform var(--mid) var(--ease), opacity var(--mid); }
   .sheet.open{ transform:translate(-50%, -50%); opacity:1; }
   .sheet.tall{ height:auto; }
   .sheet .grab{ display:none; }
@@ -417,6 +512,7 @@ input[type=range]:disabled{ opacity:.4; }
 </head>
 <body>
 <div id="wall"></div>
+<div id="sbar"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -434,6 +530,14 @@ input[type=range]:disabled{ opacity:.4; }
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.6 5.4 3.6 8.5s-1.1 5.9-3.6 8.5c-2.5-2.6-3.6-5.4-3.6-8.5S9.5 6.1 12 3.5z"/></symbol>
     <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.7 15.8a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 19V13M10 19V9M15 19V11M20 19V5"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
   </defs>
 </svg>
 
@@ -448,12 +552,10 @@ input[type=range]:disabled{ opacity:.4; }
   <main>
     <section class="view on" id="v-browse" aria-label="Browse tournaments">
       <header class="top">
-        <div class="brand">
-          <img class="mark" src="/icons/icon-192.png" alt="">
-          <div style="min-width:0"><h1>Bracket</h1><p id="homeLine">Michigan pickleball tournaments</p></div>
-        </div>
+        <div class="brand"><h1>Bracket</h1><p id="homeLine">Michigan pickleball tournaments</p></div>
         <button class="round glass" id="refreshBtn" data-act="refresh" aria-label="Refresh"><svg class="i"><use href="#i-refresh"/></svg></button>
       </header>
+      <div id="barSentinel"></div>
       <div class="bar" id="bar">
         <label class="search glass">
           <svg class="i"><use href="#i-search"/></svg>
@@ -463,22 +565,19 @@ input[type=range]:disabled{ opacity:.4; }
         </label>
         <div class="chips" id="chips"></div>
       </div>
-      <div class="meta-line" id="countLine"></div>
+      <div class="viewrow" id="viewRow"></div>
       <div id="banner"></div>
       <div id="list"></div>
     </section>
 
     <section class="view" id="v-mine" aria-label="Mine">
       <h1 class="big-title">Mine</h1>
-      <p class="big-sub">Saved on this device.</p>
+      <p class="big-sub">Tournaments you saved, on this device.</p>
       <div id="mineSeg"></div>
       <div id="mineList"></div>
     </section>
 
-    <section class="view" id="v-settings" aria-label="Settings">
-      <h1 class="big-title">Settings</h1>
-      <div id="settingsBody"></div>
-    </section>
+    <section class="view" id="v-settings" aria-label="Settings"></section>
   </main>
 
   <aside id="panel" aria-label="Tournament details"></aside>
@@ -495,19 +594,20 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-1';
+const VERSION = 'bracket-2';
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
 const DETAIL_MAX_AGE = 10 * 60 * 1000;    // refetch a tournament after 10 min
-const LEVELS = ['2.5', '3.0', '3.5', '4.0', '4.5', '5.0'];
 const FORMATS = ['Doubles', 'Mixed', 'Singles', 'Team'];
 const PRICE = { min: 20, max: 160, step: 5 };   // max = Any
 const DIST = { min: 10, max: 260, step: 10 };   // max = All of Michigan
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const QLABEL = ['New', 'Small', 'Fair', 'Good', 'Great', 'Best'];
+const FITLABEL = ['Unknown', 'Not a fit', 'Stretch', 'Okay fit', 'Good fit', 'Great fit'];
 
 // Michigan cities for "Where do you play from?"
 const CITIES = [
@@ -530,13 +630,18 @@ const CITIES = [
 function load(k, d){ try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch(e){ return d; } }
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 
-const DEFAULT_FILTERS = { when: 'any', formats: [], level: null, maxPrice: null, maxDist: null, openOnly: false };
-let S = Object.assign({ mode: 'auto', home: null, level: null, onboarded: false, mineTab: 'interested' }, load(LS.settings, {}));
+const DEFAULT_FILTERS = { when: 'any', wk: null, from: null, to: null, formats: [], level: null, maxPrice: null, maxDist: null, openOnly: false };
+let S = Object.assign({ mode: 'auto', size: 'm', home: null, rating: null, fit: true, view: 'list', onboarded: false, mineTab: 'interested' }, load(LS.settings, {}));
 S.filters = Object.assign({}, DEFAULT_FILTERS, S.filters || {});
+// bracket-1 → bracket-2: one "level" (3.5) became a rating (3.50) + level filter "fit" / "up"
+if(S.level != null && S.rating == null){ const r = parseFloat(S.level); if(r) S.rating = r; }
+delete S.level;
+if(S.filters.level && S.filters.level !== 'fit' && S.filters.level !== 'up') S.filters.level = 'fit';
+if(S.filters.when === '30' || S.filters.when === '90' || S.filters.when === 'any' || S.filters.when === 'wk' || S.filters.when === 'range'){} else S.filters.when = 'any';
 let SAVES = Object.assign({ interested: {}, registered: {} }, load(LS.saves, {}));
 let LIST = load(LS.list, null);          // { fetchedAt, savedAt, items }
 let DET = load(LS.details, {});          // { slug: { at, data } }
-const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, citySearch: '' };
+const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, spage: null, calMonth: null, calDay: null };
 
 function saveSettings(){ save(LS.settings, S); }
 function saveSaves(){ save(LS.saves, SAVES); }
@@ -545,6 +650,8 @@ function saveSaves(){ save(LS.saves, SAVES); }
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const icon = (id, cls = 'i') => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
+const tile = (id, color) => `<span class="tile ${color}">${icon(id)}</span>`;
+const pl = (n, w, ws) => n + ' ' + (n === 1 ? w : (ws || w + 's'));
 const pad = n => String(n).padStart(2, '0');
 const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const todayStr = () => ymd(new Date());
@@ -552,6 +659,7 @@ function parseDay(s){ const [y, m, d] = String(s || '').split('-').map(Number); 
 function addDays(s, n){ const d = parseDay(s); d.setDate(d.getDate() + n); return ymd(d); }
 function daysBetween(a, b){ return Math.round((parseDay(b) - parseDay(a)) / 864e5); }
 const isWide = () => matchMedia('(min-width: 900px)').matches;
+const rt = r => (+r).toFixed(2);
 
 // "Nov 10 2026 10:00 PM EST" → Date (local time; Michigan players are on Eastern time)
 function parsePTDate(s){
@@ -565,16 +673,21 @@ function parsePTDate(s){
 }
 const fmtDay = d => `${MON[d.getMonth()]} ${d.getDate()}`;
 const fmtTime = d => { let h = d.getHours(), m = d.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + pad(m) + ' ' + ap; };
+function fmtSpan(a, b){
+  const s = parseDay(a), e = parseDay(b || a);
+  if(a === (b || a)) return fmtDay(s);
+  return s.getMonth() === e.getMonth() ? `${fmtDay(s)}–${e.getDate()}` : `${fmtDay(s)} – ${fmtDay(e)}`;
+}
 
 function relAgo(iso){
   const t = typeof iso === 'number' ? iso : Date.parse(iso);
   if(!t) return '';
   const m = Math.round((Date.now() - t) / 60000);
   if(m < 1) return 'just now';
-  if(m < 60) return m + 'm ago';
+  if(m < 60) return m + ' min ago';
   const h = Math.round(m / 60);
-  if(h < 48) return h + 'h ago';
-  return Math.round(h / 24) + 'd ago';
+  if(h < 48) return pl(h, 'hour') + ' ago';
+  return pl(Math.round(h / 24), 'day') + ' ago';
 }
 
 function miles(a, b){
@@ -591,7 +704,10 @@ function distOf(t){
 }
 const distText = d => d == null ? '' : d < 1 ? 'Under 1 mi' : Math.round(d) + ' mi';
 
-// Same rules as the server: "3.5" → 3.5–3.99, "3.0 To 3.5", "4.5 And Above" → 4.5–9, "Open" → open
+/* ---------------- Levels ----------------
+   Events list a level range: "3.5" → 3.5–3.99, "3.0 To 3.5", "4.5 And Above" → 4.5–9, "Open".
+   Your level   = events whose range includes your rating (a 3.40 fits 3.0–3.5 and 3.0–3.49).
+   Playing up   = events one step higher: they include your rating + 0.5 but not your rating (3.5–4.0 for a 3.40). */
 function skillRange(s){
   s = String(s || '').trim();
   if(!s) return null;
@@ -603,8 +719,17 @@ function skillRange(s){
   if(nums.length >= 2) return { lo: nums[0], hi: nums[1] };
   return { lo: nums[0], hi: nums[0] + 0.49 };
 }
-const covers = (lo, hi, L) => !(lo === 0 && hi === 9) && lo - 0.001 <= L && L <= hi + 0.001;
-const levelText = v => v == null ? 'Any' : (v === '5.0' ? '5.0+' : v);
+const isOpenRange = (lo, hi) => lo === 0 && hi === 9;
+const covers = (lo, hi, R) => !isOpenRange(lo, hi) && lo - 0.001 <= R && R <= hi + 0.001;
+const isUp = (lo, hi, R) => !covers(lo, hi, R) && covers(lo, hi, R + 0.5) && lo > R;
+function levelInfo(t){
+  if(S.rating == null || !t.ev || !t.ev.skills) return null;
+  const real = t.ev.skills.filter(r => !isOpenRange(r[0], r[1]));
+  if(!real.length) return null;
+  if(real.some(r => covers(r[0], r[1], S.rating))) return { k: 'fit', txt: '✓ Has your level' };
+  if(real.some(r => isUp(r[0], r[1], S.rating))) return { k: 'up', txt: '↑ Play-up events only' };
+  return { k: 'no', txt: 'No events at your level' };
+}
 
 /* ---------------- Tournament logic ---------------- */
 function isPlayingNow(t){ const td = todayStr(); return t.startDay <= td && (t.endDay || t.startDay) >= td; }
@@ -615,6 +740,18 @@ function isUpcoming(t){
   const td = todayStr();
   if(t.startDay >= td) return true;
   return (t.endDay || t.startDay) >= td && daysBetween(t.startDay, t.endDay || t.startDay) <= 4;
+}
+// Days a tournament covers (long leagues only count their first day)
+function daysOf(t){
+  const s = t.startDay, e = t.endDay || t.startDay;
+  const len = daysBetween(s, e);
+  if(len < 0 || len > 7) return [s];
+  return Array.from({ length: len + 1 }, (_, i) => addDays(s, i));
+}
+function overlaps(t, a, b){
+  const s = t.startDay, e = t.endDay || t.startDay;
+  if(daysBetween(s, e) > 7) return s >= a && s <= b;
+  return s <= b && e >= a;
 }
 
 function detailOf(slug){ const e = DET[slug]; return e && e.data ? e.data : null; }
@@ -646,17 +783,43 @@ function quality(t, evCount){
   const reasons = [];
   if(t.playersHidden) reasons.push('The organizer hides the player count, so size is unknown');
   else if(p === 0) reasons.push('No players registered yet, too early to tell');
-  else reasons.push(`${p} player${p === 1 ? '' : 's'} registered` + (p >= 180 ? ' (a big field)' : p >= 50 ? '' : ' so far'));
-  if(n) reasons.push(`${n} event${n === 1 ? '' : 's'}` + (n >= 20 ? ' (lots to choose from)' : ''));
+  else reasons.push(`${pl(p, 'player')} registered` + (p >= 180 ? ' (a big field)' : p >= 50 ? '' : ' so far'));
+  if(n) reasons.push(pl(n, 'event') + (n >= 20 ? ' (lots to choose from)' : ''));
   if(t.prize) reasons.push('Prize money (nice, but not part of the score)');
   return { q, label: QLABEL[q], reasons };
 }
-const meter = (q, big) => `<span class="meter${big ? ' big' : ''}" data-q="${q}" aria-label="Quality ${q} of 5">${[1,2,3,4,5].map(i => `<i class="${i <= q ? 'f' : ''}"></i>`).join('')}</span>`;
+const meter = (q, big) => `<span class="meter${big ? ' big' : ''}" data-q="${q}" aria-label="${q} of 5">${[1,2,3,4,5].map(i => `<i class="${i <= q ? 'f' : ''}"></i>`).join('')}</span>`;
+
+// Fit for you: how this tournament's events line up with your rating (needs the event list)
+function fitFor(events, R){
+  const real = events.map(e => ({ e, r: skillRange(e.skill) })).filter(x => x.r && !x.r.open);
+  const fits = real.filter(x => covers(x.r.lo, x.r.hi, R));
+  const ups = real.filter(x => isUp(x.r.lo, x.r.hi, R));
+  const reasons = [];
+  if(!real.length) return { q: 0, label: FITLABEL[0], reasons: ["The events here don't list levels (Open only), so Bracket can't tell"] };
+  if(!fits.length && !ups.length) return { q: 1, label: FITLABEL[1], reasons: [`No events at ${rt(R)} or one step up`] };
+  if(!fits.length){
+    reasons.push(`Nothing right at ${rt(R)}, but ${pl(ups.length, 'play-up event')}`);
+    reasons.push('Expect tougher matches if you play up');
+    return { q: 2, label: FITLABEL[2], reasons };
+  }
+  const pos = Math.max(...fits.map(x => { const hi = x.r.hi >= 9 ? x.r.lo + 0.5 : x.r.hi; return Math.max(0, Math.min(1, (R - x.r.lo) / Math.max(0.01, hi - x.r.lo))); }));
+  let q = pos >= 0.6 ? 5 : pos >= 0.3 ? 4 : 3;
+  reasons.push(`${pl(fits.length, 'event')} at your level`);
+  reasons.push(pos >= 0.6 ? `At ${rt(R)} you'd be near the top of that level` : pos >= 0.3 ? `At ${rt(R)} you'd be right in the middle of that level` : `At ${rt(R)} you'd be near the bottom of that level, so expect strong opponents`);
+  const most = Math.max(...fits.map(x => x.e.registered || 0));
+  if(most < 3){ reasons.push(`Only ${pl(most, 'team')} signed up in your events so far`); if(q > 3) q--; }
+  else reasons.push(`Up to ${most} teams signed up in your events`);
+  const full = fits.filter(x => x.e.max && x.e.registered >= x.e.max).length;
+  if(full === fits.length){ q = Math.max(2, q - 2); reasons.push('Your events are full (waitlist only)'); }
+  if(ups.length) reasons.push(`Plus ${pl(ups.length, 'play-up event')} if you want a challenge`);
+  return { q, label: FITLABEL[q], reasons };
+}
 
 function priceText(t){
   if(t.free) return 'Free';
   if(t.price == null || isNaN(t.price)) return '';
-  return '$' + Math.round(t.price) + (t.costPerEvent ? '/event' : '');
+  return '$' + Math.round(t.price) + (t.costPerEvent ? ' per event' : '');
 }
 function playersText(t){
   if(t.playersHidden) return 'Players hidden';
@@ -700,19 +863,49 @@ function findT(slug){
   return { slug, title: 'Tournament', startDay: '', endDay: '', city: '', placeholder: true };
 }
 
+/* ---------------- When: weekends + dates ---------------- */
+// Saturdays of this weekend and the next n-1 weekends
+function weekends(n){
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const wd = d.getDay();
+  const sat = new Date(d); sat.setDate(d.getDate() + (wd === 0 ? -1 : 6 - wd));
+  return Array.from({ length: n }, (_, i) => { const x = new Date(sat); x.setDate(sat.getDate() + i * 7); return ymd(x); });
+}
+const wkWindow = sat => [addDays(sat, -1), addDays(sat, 1)]; // Fri–Sun
+function wkName(sat){
+  const list = weekends(2);
+  if(sat === list[0]) return 'This weekend';
+  if(sat === list[1]) return 'Next weekend';
+  return 'Weekend';
+}
+const wkDates = sat => fmtSpan(sat, addDays(sat, 1));
+function whenLabel(f = S.filters){
+  if(f.when === '30') return 'Next 30 days';
+  if(f.when === '90') return 'Next 3 months';
+  if(f.when === 'wk' && f.wk){ const n = wkName(f.wk); return (n === 'Weekend' ? 'Weekend of ' : n + ', ') + wkDates(f.wk); }
+  if(f.when === 'range' && f.from) return fmtSpan(f.from, f.to || f.from);
+  return 'Any time';
+}
+
 /* ---------------- Filters ---------------- */
-function passes(t, f = S.filters){
-  if(f.when !== 'any'){
-    const lim = addDays(todayStr(), f.when === '30' ? 30 : 92);
-    if(t.startDay > lim) return false;
+function passes(t, f = S.filters, skipWhen){
+  if(!skipWhen){
+    if(f.when === '30' || f.when === '90'){
+      if(t.startDay > addDays(todayStr(), f.when === '30' ? 30 : 92)) return false;
+    } else if(f.when === 'wk' && f.wk){
+      const [a, b] = wkWindow(f.wk);
+      if(!overlaps(t, a, b)) return false;
+    } else if(f.when === 'range' && f.from){
+      if(!overlaps(t, f.from, f.to || f.from)) return false;
+    }
   }
   if(f.formats.length && t.ev && t.ev.formats && t.ev.formats.length){
     if(!f.formats.some(x => t.ev.formats.includes(x))) return false;
   }
-  if(f.level && t.ev && t.ev.skills){
-    const L = parseFloat(f.level);
-    const real = t.ev.skills.filter(r => !(r[0] === 0 && r[1] === 9));
-    if(real.length && !real.some(r => covers(r[0], r[1], L))) return false;
+  if(f.level && S.rating != null && t.ev && t.ev.skills){
+    const R = S.rating;
+    const real = t.ev.skills.filter(r => !isOpenRange(r[0], r[1]));
+    if(real.length && !real.some(r => covers(r[0], r[1], R) || (f.level === 'up' && isUp(r[0], r[1], R)))) return false;
   }
   if(f.maxPrice != null && !t.free && t.price != null && t.price > f.maxPrice) return false;
   if(f.maxDist != null && S.home){
@@ -731,9 +924,10 @@ function matchesQuery(t, q){
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
 function activeFilterCount(f = S.filters){
-  return (f.when !== 'any') + (f.formats.length > 0) + (f.level != null) + (f.maxPrice != null) + (f.maxDist != null && !!S.home) + (!!f.openOnly);
+  return (f.when !== 'any') + (f.formats.length > 0) + (!!f.level && S.rating != null) + (f.maxPrice != null) + (f.maxDist != null && !!S.home) + (!!f.openOnly);
 }
 function upcomingItems(){ return (LIST && LIST.items ? LIST.items : []).filter(isUpcoming); }
+function shownItems(){ return upcomingItems().filter(t => passes(t) && matchesQuery(t, ui.q)); }
 
 /* ---------------- Data ---------------- */
 async function fetchList(force){
@@ -774,7 +968,7 @@ async function loadDetail(slug, force){
   } finally {
     ui.detLoading[slug] = false;
     refreshOpenDetail();
-    if(ui.tab === 'browse') renderList(); else if(ui.tab === 'mine') renderMine();
+    if(ui.tab === 'browse') renderList(); else if(ui.tab === 'mine') renderMine(true);
   }
 }
 
@@ -784,7 +978,8 @@ function card(t){
   const d = distOf(t);
   const q = quality(t);
   const saved = !!SAVES.interested[t.slug];
-  const fm = t.ev && t.ev.formats && t.ev.formats.length ? t.ev.formats.join(' · ') + (t.ev.n ? ` · ${t.ev.n} event${t.ev.n === 1 ? '' : 's'}` : '') : '';
+  const lv = levelInfo(t);
+  const fm = t.ev && t.ev.formats && t.ev.formats.length ? t.ev.formats.join(' · ') + (t.ev.n ? ` · ${pl(t.ev.n, 'event')}` : '') : '';
   const price = priceText(t);
   return `<div class="card${ui.openSlug === t.slug && isWide() ? ' sel' : ''}" role="button" tabindex="0" data-act="open" data-slug="${esc(t.slug)}">
     ${dateBlock(t)}
@@ -792,8 +987,8 @@ function card(t){
       <div class="kick">${esc(t.city || '')}${d != null ? `<span class="dot"></span>${distText(d)}` : ''}</div>
       <h3>${esc(t.title)}</h3>
       <div class="tags"><span class="tag ${st.k}">${esc(st.txt)}</span>${t.prize ? '<span class="tag prize">$ Prize money</span>' : ''}</div>
-      ${fm ? `<div class="fmt">${esc(fm)}</div>` : ''}
-      <div class="foot">${meter(q.q)}<span>${playersText(t)}</span>${price ? `<span class="sep"></span><span>${esc(price)}</span>` : ''}</div>
+      ${fm || lv ? `<div class="fmt">${lv ? `<span class="lv ${lv.k}">${esc(lv.txt)}</span>${fm ? ' · ' : ''}` : ''}${esc(fm)}</div>` : ''}
+      <div class="foot">${meter(q.q)}<span>${playersText(t)}</span></div>${price ? `<div class="price">${esc(price)}</div>` : ''}
     </div>
     <button class="star" data-act="star" data-slug="${esc(t.slug)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from Interested' : 'Interested'}">${icon('star')}</button>
   </div>`;
@@ -810,7 +1005,7 @@ function groupByMonth(items){
     }
     cur.items.push(t);
   });
-  return out.map(g => `<h2 class="month">${g.label}${g.year ? `<small>${g.year}</small>` : ''}</h2><div class="cards">${g.items.map(card).join('')}</div>`).join('');
+  return out.map(g => `<h2 class="month">${g.label}${g.year ? ' ' + g.year : ''}<small>${pl(g.items.length, 'tournament')}</small></h2><div class="cards">${g.items.map(card).join('')}</div>`).join('');
 }
 
 /* ---------------- Browse ---------------- */
@@ -818,35 +1013,34 @@ function renderRefresh(){
   const b = $('#refreshBtn');
   if(b) b.classList.toggle('spin', ui.loading);
 }
+function levelChipLabel(){ return S.filters.level === 'up' ? `Level ${rt(S.rating)} + up` : `Level ${rt(S.rating)}`; }
 function renderChips(){
   const f = S.filters, n = activeFilterCount();
   const chips = [`<button class="chip glass${n ? ' on' : ''}" data-act="filters">${icon('filter')}Filters${n ? `<span class="n">${n}</span>` : ''}</button>`];
   const add = (k, label) => chips.push(`<button class="chip glass on" data-act="clear-filter" data-k="${k}" aria-label="Remove filter ${esc(label)}">${esc(label)}<span class="cx">${icon('x')}</span></button>`);
-  if(f.when !== 'any') add('when', f.when === '30' ? 'Next 30 days' : 'Next 3 months');
+  if(f.when !== 'any') add('when', whenLabel());
+  if(f.level && S.rating != null) add('level', levelChipLabel());
   if(f.formats.length) add('formats', f.formats.join(', '));
-  if(f.level) add('level', 'Level ' + levelText(f.level));
   if(f.maxPrice != null) add('maxPrice', '$' + f.maxPrice + ' or less');
   if(f.maxDist != null && S.home) add('maxDist', 'Within ' + f.maxDist + ' mi');
   if(f.openOnly) add('openOnly', 'Open to register');
   if(!n){
-    // quick picks when nothing is set
-    chips.push(`<button class="chip glass" data-act="quick" data-k="30">Next 30 days</button>`);
+    chips.push(`<button class="chip glass" data-act="quick" data-k="wk">This weekend</button>`);
+    if(S.rating != null) chips.push(`<button class="chip glass" data-act="quick" data-k="level">My level (${rt(S.rating)})</button>`);
     chips.push(`<button class="chip glass" data-act="quick" data-k="open">Open to register</button>`);
-    if(S.level) chips.push(`<button class="chip glass" data-act="quick" data-k="level">My level (${esc(levelText(S.level))})</button>`);
   }
   $('#chips').innerHTML = chips.join('');
 }
+function renderViewRow(){
+  const all = upcomingItems(), shown = shownItems();
+  const meta = LIST ? `${pl(shown.length, 'tournament')}${shown.length !== all.length ? ` of ${all.length}` : ''} · ${ui.loading ? 'Updating…' : 'Updated ' + relAgo(LIST.fetchedAt)}` : '';
+  $('#viewRow').innerHTML = viewSeg() + `<div class="meta">${meta}</div>`;
+}
 function renderList(){
+  renderViewRow();
   const list = $('#list');
   const all = upcomingItems();
-  const shown = all.filter(t => passes(t) && matchesQuery(t, ui.q));
-  // count line
-  const cl = $('#countLine');
-  if(LIST){
-    const filtered = shown.length !== all.length;
-    cl.innerHTML = `<span>${shown.length} tournament${shown.length === 1 ? '' : 's'}${filtered ? ` of ${all.length}` : ''}</span><span>${ui.loading ? 'Updating…' : 'Updated ' + relAgo(LIST.fetchedAt)}</span>`;
-  } else cl.innerHTML = '';
-  // banner when the data source failed but we have an older list
+  const shown = shownItems();
   const bn = $('#banner');
   if(ui.error && LIST){
     bn.innerHTML = `<div class="banner">${icon('wifi')}<div><b>Can't reach tournament data right now.</b>Showing the list from ${relAgo(LIST.fetchedAt)}. <button data-act="refresh">Try again</button></div></div>`;
@@ -864,40 +1058,90 @@ function renderList(){
     list.innerHTML = `<div class="empty"><div class="ico">${icon('trophy')}</div><h3>No upcoming tournaments</h3><p>Nothing in Michigan is listed on pickleballtournaments.com right now. Check back soon.</p></div>`;
     return;
   }
+  if(S.view === 'cal'){ list.innerHTML = calendarHTML(shown); return; }
   if(!shown.length){
-    const why = ui.q ? `Nothing matches “${esc(ui.q)}”` : 'No tournaments match your filters';
-    list.innerHTML = `<div class="empty"><div class="ico">${icon('search')}</div><h3>${why}</h3><p>Try a wider distance, a different level, or clear everything.</p><button class="btn ghost" data-act="reset-all-filters">Clear search and filters</button></div>`;
+    list.innerHTML = noMatchHTML();
     return;
   }
-  list.innerHTML = groupByMonth(shown) + `<p class="end-note">Unofficial. Tournament data from <a href="${PT}" target="_blank" rel="noopener">pickleballtournaments.com</a>.<br>Registration always happens on their site.</p>`;
+  list.innerHTML = groupByMonth(shown) + endNote();
+}
+const endNote = () => `<p class="end-note">Unofficial. Tournament data from <a href="${PT}" target="_blank" rel="noopener">pickleballtournaments.com</a>.<br>Registration always happens on their site.</p>`;
+function noMatchHTML(){
+  const why = ui.q ? `Nothing matches “${esc(ui.q)}”` : 'No tournaments match your filters';
+  return `<div class="empty"><div class="ico">${icon('search')}</div><h3>${why}</h3><p>Try a wider distance, a different weekend, or clear everything.</p><button class="btn ghost" data-act="reset-all-filters">Clear search and filters</button></div>`;
 }
 function renderBrowse(){
   $('#homeLine').textContent = S.home ? 'Michigan · ' + (S.home.src === 'gps' ? homeName() : 'from ' + S.home.name) : 'Michigan pickleball tournaments';
   renderChips(); renderList(); renderRefresh();
+  requestAnimationFrame(updateBars);
+}
+
+/* ---------------- Calendar view ---------------- */
+function calendarHTML(shown){
+  const today = todayStr();
+  const map = {};
+  shown.forEach(t => daysOf(t).forEach(d => { (map[d] = map[d] || []).push(t); }));
+  const months = Object.keys(map).map(d => d.slice(0, 7)).sort();
+  const thisMonth = today.slice(0, 7);
+  const lastMonth = months.length ? months[months.length - 1] : thisMonth;
+  if(!ui.calMonth || ui.calMonth < thisMonth) ui.calMonth = months.find(m => m >= thisMonth) || thisMonth;
+  // pick a day: keep the chosen one if it's in this month, else the first day with tournaments
+  const inMonth = d => d && d.slice(0, 7) === ui.calMonth;
+  if(!inMonth(ui.calDay)){
+    ui.calDay = Object.keys(map).filter(d => inMonth(d) && d >= today).sort()[0] || null;
+  }
+  const [y, m] = ui.calMonth.split('-').map(Number);
+  const first = new Date(y, m - 1, 1), dim = new Date(y, m, 0).getDate(), off = first.getDay();
+  const cells = Math.ceil((off + dim) / 7) * 7;
+  const monthCount = new Set(Object.keys(map).filter(inMonth).flatMap(d => map[d].map(t => t.slug))).size;
+  let h = `<div class="cal"><div class="cal-head">
+    <button class="navbtn prev" data-act="cal-prev" aria-label="Previous month" ${ui.calMonth <= thisMonth ? 'disabled' : ''}>${icon('chev')}</button>
+    <h2>${MONTH[m - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}<small>${pl(monthCount, 'tournament')}</small></h2>
+    <button class="navbtn" data-act="cal-next" aria-label="Next month" ${ui.calMonth >= lastMonth ? 'disabled' : ''}>${icon('chev')}</button></div>
+    <div class="cal-grid">${['S','M','T','W','T','F','S'].map((w, i) => `<div class="cal-wd${i === 0 || i === 6 ? ' we' : ''}">${w}</div>`).join('')}`;
+  for(let i = 0; i < cells; i++){
+    const dn = i - off + 1;
+    if(dn < 1 || dn > dim){ h += '<div class="day blank"></div>'; continue; }
+    const ds = `${y}-${pad(m)}-${pad(dn)}`;
+    const list = map[ds] || [];
+    const wd = (off + dn - 1) % 7;
+    const mine = list.some(t => SAVES.interested[t.slug] || SAVES.registered[t.slug]);
+    const cls = ['day', wd === 0 || wd === 6 ? 'we' : '', ds < today ? 'past' : '', ds === today ? 'today' : '', ds === ui.calDay ? 'sel' : ''].filter(Boolean).join(' ');
+    h += `<button class="${cls}" data-act="cal-day" data-day="${ds}" aria-label="${WDL[wd]} ${MONTH[m - 1]} ${dn}, ${pl(list.length, 'tournament')}" ${ds < today ? 'disabled' : ''}><span class="num">${dn}</span>${list.length ? `<span class="cnt${mine ? ' mine' : ''}">${list.length}</span>` : ''}</button>`;
+  }
+  h += `</div><div class="cal-legend"><span><i></i>Tournaments that day</span><span><i class="mine"></i>One you saved</span><span><i class="we"></i>Weekend</span></div></div>`;
+  if(ui.calDay){
+    const d = parseDay(ui.calDay), list = map[ui.calDay] || [];
+    h += `<h2 class="day-title">${WDL[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}<small>${list.length ? pl(list.length, 'tournament') + ' that day' : 'No tournaments that day'}</small></h2>`;
+    h += list.length ? `<div class="cards">${list.map(card).join('')}</div>` : `<div class="empty sm"><p>Days with a green number have tournaments. Tap one to see them.</p></div>`;
+  } else {
+    h += `<div class="empty sm"><p>${monthCount ? 'Tap a day with a green number to see its tournaments.' : 'No tournaments this month' + (activeFilterCount() || ui.q ? ' with your filters.' : '.')}</p></div>`;
+  }
+  return h + endNote();
 }
 
 /* ---------------- Mine ---------------- */
 function mineBuckets(){
   const interested = [], registered = [], history = [];
   const seen = new Set();
+  const live = slug => LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : null;
   Object.keys(SAVES.registered).forEach(slug => {
-    const t = Object.assign({}, SAVES.registered[slug], LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : {});
+    const t = Object.assign({}, SAVES.registered[slug], live(slug) || {});
     (isPast(t) ? history : registered).push(t); seen.add(slug);
   });
   Object.keys(SAVES.interested).forEach(slug => {
     if(seen.has(slug)) return;
-    const t = Object.assign({}, SAVES.interested[slug], LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : {});
+    const t = Object.assign({}, SAVES.interested[slug], live(slug) || {});
     (isPast(t) ? history : interested).push(t);
   });
   const byDate = (a, b) => (a.startDay || '').localeCompare(b.startDay || '');
   interested.sort(byDate); registered.sort(byDate); history.sort((a, b) => byDate(b, a));
   return { interested, registered, history };
 }
-function renderMine(){
+function renderMine(noWarm){
   const b = mineBuckets();
   const tabs = [['interested', 'Interested', b.interested.length], ['registered', 'Registered', b.registered.length], ['history', 'History', b.history.length]];
-  const i = tabs.findIndex(x => x[0] === S.mineTab);
-  $('#mineSeg').innerHTML = `<div class="seg tall" data-seg="mine" style="--n:3;--i:${Math.max(0, i)}"><span class="thumb"></span>${tabs.map(t => `<button data-v="${t[0]}" aria-pressed="${t[0] === S.mineTab}">${t[1]}${t[2] ? ' ' + t[2] : ''}</button>`).join('')}</div>`;
+  $('#mineSeg').innerHTML = segHTML('mine', tabs.map(t => [t[0], t[1] + (t[2] ? ' ' + t[2] : '')]), S.mineTab);
   const items = b[S.mineTab] || [];
   const el = $('#mineList');
   if(!items.length){
@@ -910,7 +1154,7 @@ function renderMine(){
     return;
   }
   el.innerHTML = groupByMonth(items);
-  warmSaved();
+  if(!noWarm) warmSaved();
 }
 // Load details for saved upcoming tournaments (a few at a time) so "Closes soon" / "Opens" show in Mine
 let warmed = 0;
@@ -928,34 +1172,126 @@ function renderBadge(){
   el.hidden = !n; el.textContent = n;
 }
 
-/* ---------------- Settings ---------------- */
+/* ---------------- Settings (iOS style, with sub-pages) ---------------- */
+function viewSeg(){
+  const opts = [['list', 'list', 'List'], ['cal', 'cal', 'Calendar']], i = opts.findIndex(o => o[0] === S.view);
+  return `<div class="seg tall" data-seg="view" style="--n:2;--i:${Math.max(0, i)}"><span class="thumb"></span>${opts.map(o => `<button data-v="${o[0]}" aria-pressed="${o[0] === S.view}">${icon(o[1])}${o[2]}</button>`).join('')}</div>`;
+}
 function segHTML(name, opts, cur, cls = ''){
   const i = opts.findIndex(o => o[0] === cur);
   return `<div class="seg ${cls}${i < 0 ? ' none' : ''}" data-seg="${name}" style="--n:${opts.length};--i:${Math.max(0, i)}"><span class="thumb"></span>${opts.map(o => `<button data-v="${esc(o[0])}" aria-pressed="${o[0] === cur}">${esc(o[1])}</button>`).join('')}</div>`;
 }
-const levelOpts = () => [['', 'Any'], ...LEVELS.map(l => [l, levelText(l)])];
+function swHTML(act, on, label){ return `<button class="sw" role="switch" data-act="${act}" aria-checked="${!!on}" aria-label="${esc(label)}"></button>`; }
+function ratingSelect(id){
+  let o = `<option value="">Not set</option>`;
+  for(let v = 2; v <= 6.001; v += 0.05) o += `<option value="${v.toFixed(2)}" ${S.rating != null && Math.abs(S.rating - v) < 0.001 ? 'selected' : ''}>${v.toFixed(2)}</option>`;
+  return `<div class="selwrap"><select id="${id}" data-rating aria-label="Your rating">${o}</select>${icon('chev')}</div>`;
+}
+const row = (act, ic, color, t, v, sub) => `<button class="gitem" data-act="${act}">${tile(ic, color)}<span class="t">${t}${sub ? `<small>${sub}</small>` : ''}</span>${v != null ? `<span class="v">${esc(v)}</span>` : ''}<svg class="i chev"><use href="#i-chev"/></svg></button>`;
+const SIZE_NAMES = { m: 'Default', l: 'Large', xl: 'Larger' };
+const MODE_NAMES = { auto: 'Auto', light: 'Light', dark: 'Dark' };
+
 function renderSettings(){
+  const el = $('#v-settings');
+  if(ui.spage){ el.innerHTML = settingsPage(ui.spage); return; }
   const b = mineBuckets();
-  $('#settingsBody').innerHTML = `
+  el.innerHTML = `<h1 class="big-title">Settings</h1>
     <div class="group-l">You</div>
     <div class="group">
-      <button class="gitem" data-act="home">${icon('pin')}<span class="t">Home</span><span class="v">${S.home ? esc(S.home.name) : 'Not set'}</span><svg class="i chev"><use href="#i-chev"/></svg></button>
-      <div class="gitem col"><span class="t">Your level</span>${segHTML('setlevel', levelOpts(), S.level || '')}<p style="margin-top:8px">Events at your level are highlighted in each tournament.</p></div>
+      ${row('sp-home', 'pin', 'green', 'Home', S.home ? (S.home.src === 'gps' ? (S.home.near ? 'Near ' + S.home.near : 'My location') : S.home.name) : 'Not set')}
+      ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) : 'Not set')}
+      <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>Shows how each tournament fits your rating</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
     </div>
-    <div class="group-l">Looks</div>
-    <div class="group"><div class="gitem col">${segHTML('mode', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], S.mode)}</div></div>
-    <div class="group-l">Data on this device</div>
+    <p class="gfoot">Home is used for distances. Your rating finds events at your level. Both stay on this phone.</p>
+    <div class="group-l">Display</div>
+    <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}</div>
+    <div class="group-l">Help</div>
     <div class="group">
-      <div class="gitem col"><span class="t" style="margin-bottom:2px">Saved tournaments</span><p>${b.interested.length} interested · ${b.registered.length} registered · ${b.history.length} past</p></div>
-      <button class="gitem danger" data-act="clear-saves"><span class="t">Clear saved tournaments</span></button>
-      <button class="gitem danger" data-act="reset-app"><span class="t">Start over</span><span class="v">Clears everything</span></button>
+      ${row('sp-help', 'book', 'yellow', 'How Bracket works')}
+      ${row('sp-about', 'info', 'gray', 'About Bracket')}
     </div>
-    <div class="group-l">About</div>
-    <div class="group">
-      <div class="gitem col"><span class="t">Bracket is unofficial</span><p>Bracket is a free, unofficial way to browse Michigan pickleball tournaments. It isn't connected to pickleballtournaments.com or Pickleball.com. All tournament info comes from <a href="${PT}" target="_blank" rel="noopener">pickleballtournaments.com</a>, and you always register on their site. Check their page before you sign up, since details can change.</p></div>
-      <div class="gitem col"><span class="t">Your saves stay here</span><p>Interested and registered tournaments are kept only in this browser. Nothing about you is sent anywhere.</p></div>
-    </div>
+    <div class="group-l">Your data</div>
+    <div class="group">${row('sp-data', 'box', 'red', 'Saved on this phone', `${b.interested.length + b.registered.length + b.history.length}`)}</div>
     <p class="version">Version ${VERSION}</p>`;
+}
+function pageHead(title){
+  return `<div class="spage-head"><button class="back" data-act="sp-back">${icon('chev')}Settings</button></div><h1 class="big-title">${esc(title)}</h1>`;
+}
+function settingsPage(p){
+  const b = mineBuckets();
+  if(p === 'home') return `<div class="spage">${pageHead('Home')}
+    <p class="big-sub">Where you usually play from. Bracket uses it to show how far each tournament is and for the Distance filter.</p>
+    <div class="group" style="padding:16px">${locPicker()}</div></div>`;
+  if(p === 'rating') return `<div class="spage">${pageHead('Your rating')}
+    <p class="big-sub">Pick your rating, like your DUPR. Not sure? Pick the level you usually play, like 3.50.</p>
+    ${ratingSelect('ratingSel')}
+    <p class="gfoot">Example: at 3.40 your level is 3.0–3.5 events. One step up (“playing up”) is 3.5–4.0.</p>
+    <div class="group-l">How Bracket uses it</div>
+    <div class="group">
+      <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>A meter in each tournament for how well it fits you</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
+      <div class="gitem noicon"><span class="t">Level filter<small>In Filters, “My level” shows tournaments with events at your level. “+ Play up” also includes one step up.</small></span></div>
+    </div>
+    <p class="gfoot">Bracket can't see your DUPR account or match history. It only compares your rating with each event's level range.</p></div>`;
+  if(p === 'looks') return `<div class="spage">${pageHead('Appearance')}
+    <div class="group-l">Light or dark</div>
+    <div class="group"><div class="gitem col">${segHTML('mode', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], S.mode)}</div></div>
+    <p class="gfoot">Auto follows your phone's setting.</p>
+    <div class="group-l">Text size</div>
+    <div class="group"><div class="gitem col">${segHTML('size', [['m', 'Default'], ['l', 'Large'], ['xl', 'Larger']], S.size || 'm')}<div class="preview" style="margin-top:12px">Midwest Open · Nov 13–15<br><span style="color:var(--sub);font-size:var(--t-sm)">This is how text will look.</span></div></div></div>
+    <p class="gfoot">You can also pinch to zoom anywhere.</p></div>`;
+  if(p === 'data') return `<div class="spage">${pageHead('Saved on this phone')}
+    <div class="group">
+      <div class="gitem noicon"><span class="t">Interested</span><span class="v">${b.interested.length}</span></div>
+      <div class="gitem noicon"><span class="t">Registered</span><span class="v">${b.registered.length}</span></div>
+      <div class="gitem noicon"><span class="t">History</span><span class="v">${b.history.length}</span></div>
+    </div>
+    <p class="gfoot">Your saves live only in this browser. If you delete Bracket from your Home Screen or clear Safari's website data, they go away. Accounts that keep them safe across devices are coming later.</p>
+    <div class="group-l">Erase</div>
+    <div class="group">
+      <button class="gitem noicon danger" data-act="clear-saves"><span class="t">Clear saved tournaments</span></button>
+      <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
+    </div></div>`;
+  if(p === 'about') return `<div class="spage">${pageHead('About Bracket')}
+    <div class="group"><div class="gitem col"><span class="t">Bracket is unofficial</span><p>Bracket is a free, unofficial way to browse Michigan pickleball tournaments. It isn't connected to pickleballtournaments.com or Pickleball.com. All tournament info comes from <a href="${PT}" target="_blank" rel="noopener">pickleballtournaments.com</a>, and you always register on their site. Check their page before you sign up, since details can change.</p></div>
+    <div class="gitem col"><span class="t">Free, no ads</span><p>Bracket was made by a Michigan player for the local pickleball community. There's nothing to buy and no ads.</p></div>
+    <div class="gitem col"><span class="t">Your privacy</span><p>No account, no sign-in. Your home, rating and saved tournaments stay in this browser and aren't sent anywhere.</p></div></div>
+    <p class="version">Version ${VERSION}</p></div>`;
+  if(p === 'help') return `<div class="spage help">${pageHead('How Bracket works')}
+    <p class="big-sub">Everything Bracket does, in plain words.</p>
+    <div class="group-l">The idea</div>
+    <div class="group"><p>Finding a tournament on pickleballtournaments.com means a lot of scrolling and tapping on a small screen. Bracket shows only Michigan tournaments, in a simple list or calendar, with the things that matter up front: when, where, how far, how much, how big, and whether there are events at your level.</p><p>When you find one you like, the green <b>Register</b> button takes you to that tournament on pickleballtournaments.com. You always sign up there.</p></div>
+    <div class="group-l">Where the info comes from</div>
+    <div class="group"><p>Bracket reads the public tournament listings on pickleballtournaments.com and checks for changes about every 30 minutes. If their site is down, Bracket shows the last list it had and says so at the top.</p><p>Bracket isn't official, so always double-check details on their page before you pay.</p></div>
+    <div class="group-l">Finding tournaments</div>
+    <div class="group"><ul><li><b>Search</b> by tournament name or city.</li><li><b>List</b> shows everything coming up, by month. <b>Calendar</b> shows a month at a time; tap a day with a green number to see what's on.</li><li><b>Filters</b>: pick a weekend or dates, your level, format (Doubles, Mixed, Singles, Team), max price, distance from home, and “open to register only”.</li><li>The chips under the search bar show which filters are on. Tap the ✕ on one to turn it off.</li></ul></div>
+    <div class="group-l">Status tags</div>
+    <div class="group">
+      <div class="demo-row"><span class="tag open">Registration open</span>You can sign up now.</div>
+      <div class="demo-row"><span class="tag closing">Closes Thu, Nov 5</span>Sign-up ends within a week.</div>
+      <div class="demo-row"><span class="tag soon">Opens Nov 1</span>Sign-up hasn't started yet.</div>
+      <div class="demo-row"><span class="tag closed">Registration closed</span>Too late to sign up.</div>
+      <div class="demo-row"><span class="tag live">Playing now</span>It's happening today.</div>
+      <div class="demo-row"><span class="tag reg">You're registered</span>You marked “I registered”.</div>
+      <div class="demo-row"><span class="tag prize">$ Prize money</span>Winners get paid.</div>
+      <p style="margin-top:8px">“Closes” and “Opens” show once Bracket has loaded that tournament's details (open it once, or save it).</p></div>
+    <div class="group-l">Levels and your rating</div>
+    <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
+      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
+    <div class="group-l">Quality meter</div>
+    <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
+    <div class="group-l">Fit for you</div>
+    <div class="group"><p>When you've set your rating, each tournament shows a <b>Fit for you</b> meter. It looks at whether there are events at your level, where your rating sits in those events (near the top of 3.0–3.5 is easier than near the bottom), how many teams have signed up, and whether those events are already full.</p><p>It can't see your match history, wins or partners, so treat it as a starting point. You can turn it off in Settings.</p></div>
+    <div class="group-l">Saving tournaments</div>
+    <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li></ul><p>Saves stay on this phone. Accounts that keep them on all your devices are planned.</p></div>
+    <div class="group-l">Tips</div>
+    <div class="group"><ul><li>Add Bracket to your Home Screen: in Safari, tap Share, then “Add to Home Screen”. It opens like an app.</li><li>Text too small? Settings → Appearance → Text size.</li><li>No need to refresh. Bracket updates by itself, and the ↻ button at the top checks right away.</li></ul></div>
+  </div>`;
+  return '';
+}
+function openSPage(p){
+  ui.spage = p;
+  renderSettings();
+  window.scrollTo(0, 0);
 }
 
 /* ---------------- Detail ---------------- */
@@ -998,7 +1334,7 @@ function detailBody(t){
   }
   const st = statusOf(tt);
   const d = distOf(det.lat != null ? { lat: det.lat, lng: det.lng } : tt);
-  const L = S.level ? parseFloat(S.level) : null;
+  const R = S.rating;
 
   let h = '';
   if(tt.startDay) h += `<div class="d-kick">${esc(dateRangeLong(tt))}${tt.city ? ' · ' + esc(tt.city) : ''}</div>`;
@@ -1014,7 +1350,7 @@ function detailBody(t){
   // ---- Facts
   const curPrice = moneyNum(det.price) != null ? moneyNum(det.price) : tt.price;
   const priceV = tt.free ? 'Free' : curPrice != null ? '$' + Math.round(curPrice) : '—';
-  let priceS = tt.costPerEvent ? 'per event' : (tt.free ? '' : 'to enter');
+  const priceS = tt.costPerEvent ? 'per event' : (tt.free ? '' : 'to enter');
   let up = '';
   if(det.costs && det.costs.length && curPrice != null){
     const now = Date.now();
@@ -1032,11 +1368,11 @@ function detailBody(t){
   const players = det.players != null ? det.players : tt.players;
   const tiles = [];
   tiles.push(`<div class="fact"><div class="l">Price</div><div class="v">${esc(priceV)}</div>${up ? `<div class="s up">${esc(up)}</div>` : priceS ? `<div class="s">${priceS}</div>` : ''}</div>`);
-  tiles.push(`<div class="fact"><div class="l">Players</div><div class="v">${tt.playersHidden || (data && data.playerCountHidden) ? 'Hidden' : esc(players || 0)}</div><div class="s">registered so far</div></div>`);
+  tiles.push(`<div class="fact"><div class="l">Players</div><div class="v">${tt.playersHidden || (data && data.playerCountHidden) ? 'Hidden' : esc(players || 0)}</div><div class="s">signed up so far</div></div>`);
   if(regV) tiles.push(`<div class="fact"><div class="l">Registration</div><div class="v sm">${esc(regV[0])}</div>${regV[1] ? `<div class="s">${esc(regV[1])}</div>` : ''}</div>`);
   if(det.courts) tiles.push(`<div class="fact"><div class="l">Courts</div><div class="v">${esc(det.courts)}</div><div class="s">${esc([det.playArea, det.surface].filter(Boolean).join(' · ') || 'courts')}</div></div>`);
   else if(det.playArea) tiles.push(`<div class="fact"><div class="l">Venue</div><div class="v sm">${esc(det.playArea)}</div>${det.surface ? `<div class="s">${esc(det.surface)}</div>` : ''}</div>`);
-  tiles.push(`<div class="fact"><div class="l">Distance</div>${d != null ? `<div class="v">${distText(d)}</div><div class="s">from ${esc(S.home.src === 'gps' ? 'your home spot' : S.home.name)}</div>` : `<div class="v sm"><button class="linkbtn" data-act="home">Set your home</button></div><div class="s">to see how far</div>`}</div>`);
+  tiles.push(`<div class="fact"><div class="l">Distance</div>${d != null ? `<div class="v">${distText(d)}</div><div class="s">from ${esc(S.home.src === 'gps' ? 'your home spot' : S.home.name)}</div>` : `<div class="v sm"><button class="linkbtn" data-act="go-home">Set your home</button></div><div class="s">to see how far</div>`}</div>`);
   if(loading && tiles.length < 4) tiles.push('<div class="skel sm"></div>');
   h += `<div class="facts">${tiles.join('')}</div>`;
 
@@ -1044,9 +1380,21 @@ function detailBody(t){
     h += `<div class="d-error">Couldn't load the full details right now. <button class="linkbtn" data-act="retry-detail" data-slug="${esc(slug)}">Try again</button></div>`;
   }
 
+  // ---- Fit for you
+  if(S.fit){
+    if(R == null){
+      h += `<div class="blk fit"><h3>Fit for you</h3><p class="desc">Add your rating and Bracket will show how well this tournament fits you.</p><div class="btnrow"><button class="btn sm ghost" data-act="go-rating">${icon('target')}Add your rating</button></div></div>`;
+    } else if(events.length){
+      const f = fitFor(events, R);
+      h += `<div class="blk fit"><h3>Fit for you<small>your rating ${rt(R)}</small></h3><div class="qhead">${meter(f.q, true)}<b>${f.label}</b></div><ul class="reasons">${f.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul><p class="fine">Based on your rating and each event's level. Bracket can't see your match history.</p></div>`;
+    } else if(loading){
+      h += '<div class="skel sm" style="margin:16px 0"></div>';
+    }
+  }
+
   // ---- Quality
   const q = quality(Object.assign({}, tt, { players }), events.length || null);
-  h += `<div class="blk"><h3>Quality<small>based mostly on player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
+  h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
 
   // ---- Where
   if(det.venue || det.street || tt.location){
@@ -1055,41 +1403,47 @@ function detailBody(t){
     h += `<div class="blk"><h3>Where</h3><div class="addr"><b>${esc(det.venue || tt.city || 'Venue')}</b><span>${esc(lines)}</span></div>
       <div class="btnrow"><a class="btn sm ghost" href="${esc(mapsUrl(q2, det.lat, det.lng))}" target="_blank" rel="noopener">${icon('pin')}Open in Maps</a>${det.website && /^https?:/i.test(det.website) ? `<a class="btn sm ghost" href="${esc(det.website)}" target="_blank" rel="noopener">${icon('globe')}Website</a>` : ''}</div></div>`;
   } else if(loading){
-    h += '<div class="skel sm" style="margin:18px 0"></div>';
+    h += '<div class="skel sm" style="margin:16px 0"></div>';
   }
 
-  // ---- Events
+  // ---- Events, grouped by level
   if(events.length){
-    const showMine = L != null && ui.evMine;
-    const mineCount = L != null ? events.filter(e => { const r = skillRange(e.skill); return r && !r.open && covers(r.lo, r.hi, L); }).length : 0;
-    const groups = new Map();
-    events.forEach(e => {
+    const tagged = events.map(e => {
       const r = skillRange(e.skill);
-      const isMine = L != null && r && !r.open && covers(r.lo, r.hi, L);
-      if(showMine && mineCount && !isMine) return;
-      const key = evSkill(e.skill) || 'Other';
-      if(!groups.has(key)) groups.set(key, { lo: r ? (r.open ? 99 : r.lo) : 100, hi: r ? r.hi : 100, mine: false, list: [] });
-      const g = groups.get(key);
-      if(isMine) g.mine = true;
-      g.list.push(Object.assign({ isMine }, e));
+      const mine = R != null && r && !r.open && covers(r.lo, r.hi, R);
+      const upE = R != null && r && !r.open && isUp(r.lo, r.hi, R);
+      return Object.assign({ r, mine, upE }, e);
     });
-    const toggle = L != null && mineCount ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">Only ${esc(levelText(S.level))}</button>` : '';
-    h += `<div class="blk"><h3><span>Events <small>${events.length}${L != null ? ` · ${mineCount} at your level` : ''}</small></span>${toggle}</h3>`;
+    const mineCount = tagged.filter(e => e.mine).length, upCount = tagged.filter(e => e.upE).length;
+    const showMine = R != null && ui.evMine && (mineCount + upCount) > 0;
+    const groups = new Map();
+    tagged.forEach(e => {
+      if(showMine && !e.mine && !e.upE) return;
+      const key = evSkill(e.skill) || 'Other';
+      if(!groups.has(key)) groups.set(key, { lo: e.r ? (e.r.open ? 99 : e.r.lo) : 100, hi: e.r ? e.r.hi : 100, mine: false, up: false, list: [] });
+      const g = groups.get(key);
+      if(e.mine) g.mine = true;
+      if(e.upE) g.up = true;
+      g.list.push(e);
+    });
+    const toggle = R != null && (mineCount + upCount) ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
+    h += `<div class="blk"><h3><span>Events <small>${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}</small></span>${toggle}</h3>`;
     [...groups.entries()].sort((a, b) => a[1].lo - b[1].lo || a[1].hi - b[1].hi).forEach(([k, g]) => {
       const title = k === 'Open' || k === 'Other' ? k : 'Level ' + k;
-      h += `<details class="evgroup" open><summary><span>${esc(title)}${g.mine ? '<span class="yl">Your level</span>' : ''} <small>${g.list.length}</small></span>${icon('chev')}</summary>`;
+      h += `<details class="evgroup" open><summary><span>${esc(title)}${g.mine ? '<span class="yl">Your level</span>' : g.up ? '<span class="yl up">Play up</span>' : ''} <small>${g.list.length}</small></span>${icon('chev')}</summary>`;
       g.list.forEach(e => {
         const word = /singles/i.test(e.format) ? 'players' : 'teams';
         const meta = [e.age && !/^\(?any\)?$/i.test(e.age) ? 'Age ' + e.age.replace(/[()]/g, '') : '', evWhen(e), e.bracket].filter(Boolean).join(' · ');
         const pct = e.max ? Math.min(100, Math.round(e.registered / e.max * 100)) : 0;
-        h += `<div class="ev${e.isMine ? ' mine' : ''}"><div class="n"><b>${esc(evName(e))}</b><span>${esc(meta)}</span></div>
+        h += `<div class="ev${e.mine ? ' mine' : e.upE ? ' up' : ''}"><div class="n"><b>${esc(evName(e))}</b><span>${esc(meta)}</span></div>
           <div class="c"><b>${e.max ? `${e.registered}/${e.max}` : e.registered}</b>${word}${e.max ? `<div class="bar2"><i class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></i></div>` : ''}${e.waitlist ? `<div class="wl">${e.waitlist} waitlist</div>` : ''}</div></div>`;
       });
       h += '</details>';
     });
+    if(showMine) h += `<p class="fine">Showing ${pl(mineCount + upCount, 'event')} at or one step above ${rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${events.length}</button></p>`;
     h += '</div>';
   } else if(loading){
-    h += '<div class="skel" style="margin:18px 0"></div>';
+    h += '<div class="skel" style="margin:16px 0"></div>';
   } else if(data && !events.length){
     h += `<div class="blk"><h3>Events</h3><p class="desc">${data.eventsError ? "Couldn't load the events list." : 'No events listed yet.'} See them on <a href="${PT}/tournaments/${esc(slug)}/events" target="_blank" rel="noopener">pickleballtournaments.com</a>.</p></div>`;
   }
@@ -1109,7 +1463,7 @@ function detailFoot(t){
   const closed = past || t.regClosed || statusOf(t).k === 'closed';
   return `<div class="foot-actions">
     <button class="iconbtn" data-act="star" data-slug="${esc(t.slug)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from Interested' : 'Interested'}">${icon('star')}</button>
-    <button class="togbtn" data-act="reg" data-slug="${esc(t.slug)}" aria-pressed="${reg}">${icon(reg ? 'check' : 'check')}${reg ? 'Registered' : 'I registered'}</button>
+    <button class="togbtn" data-act="reg" data-slug="${esc(t.slug)}" aria-pressed="${reg}">${icon('check')}${reg ? 'Registered' : 'I registered'}</button>
     <a class="btn primary reg" href="${PT}/tournaments/${encodeURIComponent(t.slug)}" target="_blank" rel="noopener">${closed ? 'View on site' : 'Register'}${icon('ext')}</a>
   </div>`;
 }
@@ -1125,10 +1479,7 @@ function openTournament(slug){
   } else {
     if(detailSheet) closeSheet(detailSheet, true);
     detailSheet = openSheet({
-      cls: 'tall',
-      title: '',
-      body: detailBody(t),
-      foot: detailFoot(t),
+      cls: 'tall', title: '', body: detailBody(t), foot: detailFoot(t),
       onClose: () => { detailSheet = null; ui.openSlug = null; }
     });
   }
@@ -1192,6 +1543,7 @@ function closeSheet(el, instant){
   if(!sheets.length) document.documentElement.classList.remove('locked');
   if(el._onClose) el._onClose();
 }
+function closeAllSheets(){ while(sheets.length) closeSheet(sheets[sheets.length - 1], true); }
 function enableDrag(sheet, close){
   const head = $('.sheet-head', sheet), body = $('.sheet-body', sheet);
   let y0 = null, dy = 0, t0 = 0, fromBody = false;
@@ -1213,7 +1565,7 @@ function enableDrag(sheet, close){
   head.addEventListener('touchstart', e => { if(!e.target.closest('button')) start(e.touches[0].clientY, false); }, { passive: true });
   head.addEventListener('touchmove', e => move(e.touches[0].clientY, e), { passive: false });
   head.addEventListener('touchend', end);
-  body.addEventListener('touchstart', e => { if(body.scrollTop <= 0 && !e.target.closest('input,.citylist,.chips')) start(e.touches[0].clientY, true); }, { passive: true });
+  body.addEventListener('touchstart', e => { if(body.scrollTop <= 0 && !e.target.closest('input,select,.citylist,.chips')) start(e.touches[0].clientY, true); }, { passive: true });
   body.addEventListener('touchmove', e => move(e.touches[0].clientY, e), { passive: false });
   body.addEventListener('touchend', end);
 }
@@ -1226,27 +1578,36 @@ function filterBody(){
   const pv = f.maxPrice == null ? PRICE.max : f.maxPrice;
   const dv = f.maxDist == null ? DIST.max : f.maxDist;
   const pct = (v, r) => ((v - r.min) / (r.max - r.min) * 100) + '%';
+  const wks = weekends(8);
+  const wkCount = sat => { const [a, b] = wkWindow(sat); return up.filter(t => overlaps(t, a, b) && passes(t, f, true)).length; };
+  const whenTop = [['any', 'Any time'], ['30', 'Next 30 days'], ['90', 'Next 3 months']];
   return `
-    <div class="fgroup"><div class="flabel">When</div>${segHTML('when', [['any', 'Any time'], ['30', '30 days'], ['90', '3 months']], f.when)}</div>
+    <div class="fgroup"><div class="flabel">When <span>${esc(whenLabel())}</span></div>
+      <div class="chipset">${whenTop.map(w => `<button class="chip plain" data-act="when" data-v="${w[0]}" aria-pressed="${f.when === w[0]}">${w[1]}</button>`).join('')}</div>
+      <div class="wkgrid">${wks.map(s => { const n = wkCount(s), nm = wkName(s); return `<button class="wk${n ? '' : ' zero'}" data-act="wk" data-v="${s}" aria-pressed="${f.when === 'wk' && f.wk === s}"><small>${nm === 'Weekend' ? 'Fri–Sun' : nm}</small><b>${wkDates(s)}</b><span>${n ? pl(n, 'tournament') : 'Nothing yet'}</span></button>`; }).join('')}</div>
+      <div class="flabel" style="margin-top:16px;font-size:var(--t-sm)">Or pick dates</div>
+      <div class="datein"><label>From<input type="date" data-date="from" min="${todayStr()}" value="${f.when === 'range' && f.from ? f.from : ''}"></label><label>To<input type="date" data-date="to" min="${todayStr()}" value="${f.when === 'range' && f.to ? f.to : ''}"></label></div></div>
+    <div class="fgroup"><div class="flabel">Level ${S.rating != null ? `<span>Your rating ${rt(S.rating)}</span>` : ''}</div>
+      ${segHTML('flevel', [['', 'Any level'], ['fit', 'My level'], ['up', '+ Play up']], f.level || '', S.rating == null ? 'dis' : '')}
+      ${S.rating == null ? `<p class="hint">Set your rating to filter by level. <button class="linkbtn" data-act="go-rating">Set your rating</button></p>` : `<p class="hint">“My level” = events that include ${rt(S.rating)}. “+ Play up” also includes one step higher.</p>`}</div>
     <div class="fgroup"><div class="flabel">Format</div><div class="chipset">${FORMATS.map(x => `<button class="chip plain" data-act="fmt" data-v="${x}" aria-pressed="${f.formats.includes(x)}">${x} <span style="opacity:.6">${fc(x)}</span></button>`).join('')}</div></div>
-    <div class="fgroup"><div class="flabel">My level</div>${segHTML('flevel', levelOpts(), f.level || '')}<p class="hint">Shows tournaments with at least one event at that level.</p></div>
     <div class="fgroup"><div class="flabel">Max price <span id="pLbl">${f.maxPrice == null ? 'Any' : '$' + f.maxPrice + ' or less'}</span></div>
       <input type="range" data-range="price" min="${PRICE.min}" max="${PRICE.max}" step="${PRICE.step}" value="${pv}" style="--p:${pct(pv, PRICE)}" aria-label="Max price"></div>
     <div class="fgroup"><div class="flabel">Distance <span id="dLbl">${!S.home ? '' : f.maxDist == null ? 'All of Michigan' : 'Within ' + f.maxDist + ' mi'}</span></div>
       <input type="range" data-range="dist" min="${DIST.min}" max="${DIST.max}" step="${DIST.step}" value="${dv}" style="--p:${pct(dv, DIST)}" ${S.home ? '' : 'disabled'} aria-label="Distance">
       ${S.home ? `<p class="hint">From ${esc(S.home.src === 'gps' ? homeName() : S.home.name)}. <button class="linkbtn" data-act="home">Change</button></p>` : `<p class="hint">Set where you play from to use this. <button class="linkbtn" data-act="home">Set home</button></p>`}</div>
-    <div class="fgroup"><div class="row"><div><div class="t">Open to register only</div><div class="s">Hide closed and already-started tournaments</div></div><button class="sw" role="switch" data-act="sw-open" aria-checked="${!!f.openOnly}" aria-label="Open to register only"></button></div></div>`;
+    <div class="fgroup"><div class="row"><div><div class="t">Open to register only</div><div class="s">Hide closed and already-started tournaments</div></div>${swHTML('sw-open', f.openOnly, 'Open to register only')}</div></div>`;
 }
 function filterFoot(){
-  const n = upcomingItems().filter(t => passes(t) && matchesQuery(t, ui.q)).length;
-  return `<button class="btn ghost" data-act="reset-filters">Reset</button><button class="btn primary" style="flex:1" data-act="close-sheet">Show ${n} tournament${n === 1 ? '' : 's'}</button>`;
+  const n = shownItems().length;
+  return `<button class="btn ghost" data-act="reset-filters">Reset</button><button class="btn primary" style="flex:1" data-act="close-sheet">Show ${pl(n, 'tournament')}</button>`;
 }
 function openFilters(){
   filterSheet = openSheet({ title: 'Filters', body: filterBody(), foot: filterFoot(), onClose: () => { filterSheet = null; } });
 }
 function filtersChanged(rebuild){
   saveSettings();
-  renderChips(); renderList();
+  if(ui.tab === 'browse'){ renderChips(); renderList(); }
   if(filterSheet){
     if(rebuild){ const b = $('.sheet-body', filterSheet); const top = b.scrollTop; b.innerHTML = filterBody(); b.scrollTop = top; }
     $('.sheet-foot', filterSheet).innerHTML = filterFoot();
@@ -1265,23 +1626,27 @@ function cityRows(q){
   if(!list.length) return `<div class="city" style="color:var(--sub);font-weight:500">No Michigan city by that name in the list. Try a nearby bigger city, or use your location.</div>`;
   return list.map(c => `<button class="city" data-act="city" data-name="${esc(c[0])}" aria-pressed="${c[0] === sel}">${esc(c[0])}${c[0] === sel ? icon('check') : ''}</button>`).join('');
 }
+function pickedText(){ return S.home ? 'Home: ' + (S.home.src === 'gps' ? (S.home.near ? 'near ' + S.home.near : 'your location') : S.home.name) : ''; }
 function locPicker(){
   return `<button class="btn primary wide" data-act="geo">${icon('loc')}Use my location</button>
     <p class="or">OR PICK A CITY</p>
     <label class="search glass" style="margin-top:10px">${icon('search')}<span class="sr">Search cities</span><input data-city-q placeholder="Search Michigan cities" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <div class="citylist">${cityRows('')}</div>
-    <div class="picked" data-picked ${S.home ? '' : 'hidden'}>${icon('check')}<span>${S.home ? 'Home: ' + esc(S.home.name) : ''}</span></div>`;
+    <div class="picked" data-picked ${S.home ? '' : 'hidden'}>${icon('check')}<span>${esc(pickedText())}</span></div>`;
 }
 let homeSheet = null;
 function openHome(){
-  homeSheet = openSheet({ title: 'Where do you play from?', body: `<p class="hint" style="margin:0 2px 14px">Bracket uses this to show how far each tournament is. It stays on this device.</p>` + locPicker(), onClose: () => { homeSheet = null; } });
+  homeSheet = openSheet({ title: 'Where do you play from?', body: `<p class="hint" style="margin:0 2px 14px">Bracket uses this to show how far each tournament is. It stays on this phone.</p>` + locPicker(), onClose: () => { homeSheet = null; } });
 }
-function setHome(h, fromWelcome){
+function setHome(h){
   S.home = h; saveSettings();
-  document.querySelectorAll('[data-picked]').forEach(p => { p.hidden = false; p.querySelector('span').textContent = 'Home: ' + h.name; });
+  document.querySelectorAll('[data-picked]').forEach(p => { p.hidden = false; p.querySelector('span').textContent = pickedText(); });
   document.querySelectorAll('.citylist').forEach(cl => { const inp = cl.parentElement.querySelector('[data-city-q]'); cl.innerHTML = cityRows(inp ? inp.value : ''); });
-  if(!fromWelcome && homeSheet){ closeSheet(homeSheet); toast('Home set to ' + h.name); }
-  renderAll();
+  if(homeSheet){ closeSheet(homeSheet); toast('Home set to ' + (h.src === 'gps' ? homeName() : h.name)); }
+  else if(ui.tab === 'settings' && ui.spage === 'home') toast('Home set to ' + (h.src === 'gps' ? homeName() : h.name));
+  renderBadge();
+  if(ui.tab === 'browse') renderBrowse();
+  if(isWide()) renderPanel(); else refreshOpenDetail();
   if(filterSheet) filtersChanged(true);
 }
 function useLocation(btn){
@@ -1292,7 +1657,7 @@ function useLocation(btn){
     btn.innerHTML = orig; btn.disabled = false;
     const lat = +pos.coords.latitude.toFixed(3), lng = +pos.coords.longitude.toFixed(3);
     const n = nearestCity(lat, lng);
-    setHome({ name: n && n.d < 20 ? 'Near ' + n.name : 'My location', near: n && n.d < 20 ? n.name : null, lat, lng, src: 'gps' }, !homeSheet);
+    setHome({ name: n && n.d < 20 ? 'Near ' + n.name : 'My location', near: n && n.d < 20 ? n.name : null, lat, lng, src: 'gps' });
   }, () => {
     btn.innerHTML = orig; btn.disabled = false;
     toast("Couldn't get your location. Pick a city instead.");
@@ -1306,14 +1671,13 @@ function showWelcome(){
   w.innerHTML = `<div class="wcard">
     <div class="whero"><img src="/icons/icon-192.png" alt=""><h1>Bracket</h1><p>Every Michigan pickleball tournament, easy to browse.</p></div>
     <section class="wsec glass"><h2>Where do you play from?</h2><p>So Bracket can show how far each tournament is.</p>${locPicker()}</section>
-    <section class="wsec glass"><h2>Your level <span style="font:600 13px var(--font);color:var(--faint)">optional</span></h2><p>Shows tournaments with events at your level first.</p>${segHTML('wlevel', levelOpts(), S.level || '')}</section>
+    <section class="wsec glass"><h2>Your rating <span style="font:600 13px var(--font);color:var(--faint)">optional</span></h2><p>Your DUPR, or the level you usually play. Bracket uses it to find events at your level. Not sure? Leave it as “Not set”.</p>${ratingSelect('wRating')}</section>
     <div class="wfoot"><button class="btn primary wide" data-act="welcome-done">Show tournaments</button><button class="linkbtn" data-act="welcome-done">Skip for now</button></div>
-    <p class="fine">Unofficial. Tournament data from pickleballtournaments.com.<br>Your choices stay on this device.</p>
+    <p class="wfine">Unofficial. Tournament data from pickleballtournaments.com.<br>Your choices stay on this phone.</p>
   </div>`;
 }
 function finishWelcome(){
   S.onboarded = true;
-  if(S.level && !S.filters.level) S.filters.level = S.level;
   saveSettings();
   const w = $('#welcome');
   w.style.transition = 'opacity .3s'; w.style.opacity = '0';
@@ -1367,7 +1731,10 @@ function afterSaveChange(){
 
 /* ---------------- Tabs + render ---------------- */
 function setTab(tab){
-  if(tab === ui.tab){ window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if(tab === ui.tab){
+    if(tab === 'settings' && ui.spage){ ui.spage = null; renderSettings(); }
+    window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+  }
   ui.scroll[ui.tab] = window.scrollY;
   ui.tab = tab;
   const i = ['browse', 'mine', 'settings'].indexOf(tab);
@@ -1376,6 +1743,7 @@ function setTab(tab){
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + tab));
   renderView();
   window.scrollTo(0, ui.scroll[tab] || 0);
+  requestAnimationFrame(updateBars);
 }
 function renderView(){
   if(ui.tab === 'browse') renderBrowse();
@@ -1386,12 +1754,17 @@ function renderAll(){
   renderView(); renderBadge();
   if(isWide()) renderPanel(); else refreshOpenDetail();
 }
+function goSettingsPage(p){
+  closeAllSheets();
+  if(isWide()){ ui.openSlug = null; renderPanel(); }
+  if(ui.tab !== 'settings') setTab('settings');
+  openSPage(p);
+}
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act], .seg button');
   if(!el) return;
-  // segmented controls
   const seg = el.closest('.seg');
   if(seg && el.tagName === 'BUTTON' && !el.dataset.act){
     const name = seg.dataset.seg, v = el.dataset.v;
@@ -1410,29 +1783,35 @@ document.addEventListener('click', e => {
     case 'filters': openFilters(); break;
     case 'clear-filter': {
       const k = el.dataset.k;
-      S.filters[k] = DEFAULT_FILTERS[k] instanceof Array ? [] : DEFAULT_FILTERS[k];
+      if(k === 'when'){ S.filters.when = 'any'; S.filters.wk = null; S.filters.from = null; S.filters.to = null; }
+      else S.filters[k] = Array.isArray(DEFAULT_FILTERS[k]) ? [] : DEFAULT_FILTERS[k];
       filtersChanged(true); break;
     }
     case 'quick': {
       const k = el.dataset.k;
-      if(k === '30') S.filters.when = '30';
+      if(k === 'wk'){ S.filters.when = 'wk'; S.filters.wk = weekends(1)[0]; }
       if(k === 'open') S.filters.openOnly = true;
-      if(k === 'level') S.filters.level = S.level;
+      if(k === 'level') S.filters.level = 'fit';
       filtersChanged(true); break;
     }
     case 'reset-filters': S.filters = Object.assign({}, DEFAULT_FILTERS, { formats: [] }); filtersChanged(true); break;
     case 'reset-all-filters': S.filters = Object.assign({}, DEFAULT_FILTERS, { formats: [] }); ui.q = ''; $('#q').value = ''; $('#qx').hidden = true; filtersChanged(true); break;
+    case 'when': S.filters.when = el.dataset.v; S.filters.wk = null; S.filters.from = null; S.filters.to = null; filtersChanged(true); break;
+    case 'wk': {
+      const v = el.dataset.v;
+      if(S.filters.when === 'wk' && S.filters.wk === v){ S.filters.when = 'any'; S.filters.wk = null; }
+      else { S.filters.when = 'wk'; S.filters.wk = v; S.filters.from = null; S.filters.to = null; }
+      ui.calMonth = null; ui.calDay = S.filters.when === 'wk' ? v : null;
+      filtersChanged(true); break;
+    }
     case 'fmt': {
       const v = el.dataset.v, f = S.filters.formats;
       S.filters.formats = f.includes(v) ? f.filter(x => x !== v) : f.concat(v);
       el.setAttribute('aria-pressed', S.filters.formats.includes(v));
       filtersChanged(false); break;
     }
-    case 'sw-open': {
-      S.filters.openOnly = !S.filters.openOnly;
-      el.setAttribute('aria-checked', S.filters.openOnly);
-      filtersChanged(false); break;
-    }
+    case 'sw-open': S.filters.openOnly = !S.filters.openOnly; el.setAttribute('aria-checked', S.filters.openOnly); filtersChanged(false); break;
+    case 'sw-fit': S.fit = !S.fit; saveSettings(); document.querySelectorAll('[data-act="sw-fit"]').forEach(x => x.setAttribute('aria-checked', S.fit)); refreshOpenDetail(); break;
     case 'refresh': fetchList(true); break;
     case 'clear-q': ui.q = ''; $('#q').value = ''; $('#qx').hidden = true; renderList(); $('#q').focus(); break;
     case 'close-sheet': { const s = el.closest('.sheet'); if(s) closeSheet(s); break; }
@@ -1441,19 +1820,35 @@ document.addEventListener('click', e => {
     case 'more': ui.descOpen = true; refreshOpenDetail(); break;
     case 'evmine': ui.evMine = !ui.evMine; refreshOpenDetail(); break;
     case 'home': openHome(); break;
+    case 'go-home': goSettingsPage('home'); break;
+    case 'go-rating': goSettingsPage('rating'); break;
     case 'geo': useLocation(el); break;
     case 'city': {
       const c = CITIES.find(x => x[0] === el.dataset.name);
-      if(c) setHome({ name: c[0], lat: c[1], lng: c[2], src: 'city' }, !homeSheet);
+      if(c) setHome({ name: c[0], lat: c[1], lng: c[2], src: 'city' });
       break;
     }
+    case 'cal-prev': case 'cal-next': {
+      const [y, m] = ui.calMonth.split('-').map(Number);
+      const d = new Date(y, m - 1 + (act === 'cal-next' ? 1 : -1), 1);
+      ui.calMonth = d.getFullYear() + '-' + pad(d.getMonth() + 1); ui.calDay = null;
+      renderList(); break;
+    }
+    case 'cal-day': ui.calDay = el.dataset.day; renderList(); break;
+    case 'sp-home': openSPage('home'); break;
+    case 'sp-rating': openSPage('rating'); break;
+    case 'sp-looks': openSPage('looks'); break;
+    case 'sp-help': openSPage('help'); break;
+    case 'sp-about': openSPage('about'); break;
+    case 'sp-data': openSPage('data'); break;
+    case 'sp-back': ui.spage = null; renderSettings(); window.scrollTo(0, 0); break;
     case 'clear-saves':
-      if(confirm('Clear all saved tournaments on this device? Interested, Registered and History will be emptied.')){
+      if(confirm('Clear all saved tournaments on this phone? Interested, Registered and History will be emptied.')){
         SAVES = { interested: {}, registered: {} }; saveSaves(); afterSaveChange(); toast('Saved tournaments cleared');
       }
       break;
     case 'reset-app':
-      if(confirm('Start over? This clears your home, level, filters and saved tournaments on this device.')){
+      if(confirm('Start over? This clears your home, rating, filters and saved tournaments on this phone.')){
         [LS.settings, LS.saves, LS.list, LS.details].forEach(k => { try { localStorage.removeItem(k); } catch(err){} });
         location.reload();
       }
@@ -1472,18 +1867,38 @@ document.addEventListener('keydown', e => {
 });
 function onSeg(name, v){
   if(name === 'mine'){ S.mineTab = v; saveSettings(); renderMine(); }
-  else if(name === 'when'){ S.filters.when = v; filtersChanged(false); }
+  else if(name === 'view'){ S.view = v; saveSettings(); renderList(); }
+  else if(name === 'startview'){ S.view = v; saveSettings(); }
   else if(name === 'flevel'){ S.filters.level = v || null; filtersChanged(false); }
-  else if(name === 'setlevel'){ S.level = v || null; S.filters.level = v || null; saveSettings(); renderBadge(); refreshOpenDetail(); }
-  else if(name === 'wlevel'){ S.level = v || null; saveSettings(); }
+  else if(name === 'size'){ S.size = v; saveSettings(); window.BracketLooks(S.mode, v); }
   else if(name === 'mode'){
     const was = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
-    S.mode = v; saveSettings(); window.BracketLooks(v);
+    S.mode = v; saveSettings(); window.BracketLooks(v, S.size);
     const now = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content;
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
     if(standalone && was !== now) setTimeout(() => location.reload(), 350); // iOS only reads the status bar style on load
   }
 }
+document.addEventListener('change', e => {
+  const t = e.target;
+  if(t.matches('[data-rating]')){
+    S.rating = t.value ? parseFloat(t.value) : null;
+    if(S.rating == null) S.filters.level = null;
+    saveSettings();
+    if(t.id === 'ratingSel') toast(S.rating != null ? 'Rating set to ' + rt(S.rating) : 'Rating cleared');
+    refreshOpenDetail();
+  } else if(t.dataset.date){
+    const f = S.filters;
+    const from = $('[data-date="from"]', t.closest('.datein')).value, to = $('[data-date="to"]', t.closest('.datein')).value;
+    if(from || to){
+      let a = from || to, b = to || from;
+      if(b < a) [a, b] = [b, a];
+      f.when = 'range'; f.from = a; f.to = b; f.wk = null;
+      ui.calMonth = a.slice(0, 7); ui.calDay = a;
+    } else { f.when = 'any'; f.from = f.to = null; }
+    filtersChanged(true);
+  }
+});
 document.addEventListener('input', e => {
   const t = e.target;
   if(t.id === 'q'){
@@ -1491,7 +1906,7 @@ document.addEventListener('input', e => {
     renderList();
     if(filterSheet) $('.sheet-foot', filterSheet).innerHTML = filterFoot();
   } else if(t.matches('[data-city-q]')){
-    const cl = t.closest('.wsec, .sheet-body').querySelector('.citylist');
+    const cl = t.closest('.wsec, .sheet-body, .group').querySelector('.citylist');
     cl.innerHTML = cityRows(t.value.trim());
   } else if(t.dataset.range){
     const v = +t.value;
@@ -1509,15 +1924,23 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('submit', e => e.preventDefault());
 
-// Sticky search bar: drop its fade when it's resting at the top of the page
-const bar = $('#bar');
-function onScroll(){ if(bar) bar.classList.toggle('at-top', bar.getBoundingClientRect().top > 1); }
-addEventListener('scroll', onScroll, { passive: true });
+/* Status-bar strip and the search bar's frosted background follow the scroll position.
+   Checked on scroll, on tab change and after every Browse render, so it can't get stuck. */
+const probe = document.createElement('div');
+probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+document.body.appendChild(probe);
+function updateBars(){
+  const sat = probe.offsetHeight;
+  $('#sbar').classList.toggle('on', window.scrollY > 4);
+  const bar = $('#bar'), sent = $('#barSentinel');
+  if(ui.tab === 'browse' && bar && sent) bar.classList.toggle('stuck', sent.getBoundingClientRect().top < sat - 0.5);
+}
+addEventListener('scroll', updateBars, { passive: true });
+addEventListener('resize', updateBars);
 
-// Follow the phone's light/dark when on Auto
 if(window.matchMedia){
   const mq = matchMedia('(prefers-color-scheme: dark)');
-  const f = () => { if(S.mode === 'auto') window.BracketLooks('auto'); };
+  const f = () => { if(S.mode === 'auto') window.BracketLooks('auto', S.size); };
   mq.addEventListener ? mq.addEventListener('change', f) : mq.addListener(f);
   const wide = matchMedia('(min-width: 900px)');
   const w = () => {
@@ -1534,12 +1957,14 @@ document.addEventListener('visibilitychange', () => {
 
 /* ---------------- Start ---------------- */
 (function boot(){
-  // Prune stale tournament details (older than 2 days)
   Object.keys(DET).forEach(k => { if(!DET[k] || Date.now() - DET[k].at > 2 * 864e5) delete DET[k]; });
-  renderAll(); onScroll();
+  // A weekend or date range that's already over shouldn't stick around
+  const f = S.filters, td = todayStr();
+  if((f.when === 'wk' && f.wk && addDays(f.wk, 1) < td) || (f.when === 'range' && f.to && f.to < td)){ f.when = 'any'; f.wk = f.from = f.to = null; }
+  saveSettings();
+  renderAll(); updateBars();
   if(!S.onboarded) showWelcome();
   if(!LIST || Date.now() - (LIST.savedAt || 0) > LIST_MAX_AGE) fetchList(false);
-  // Open a tournament straight from a link: ?t=<slug> or #t=<slug>
   const m = /[?#&]t=([a-z0-9-]+)/i.exec(location.search + location.hash);
   if(m && S.onboarded) openTournament(m[1]);
 })();
