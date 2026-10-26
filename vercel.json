@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "functions": {
+    "api/tournaments.js": { "maxDuration": 45 },
+    "api/tournament.js": { "maxDuration": 30 }
+  },
+  "headers": [
+    { "source": "/(.*)", "headers": [ { "key": "X-Robots-Tag", "value": "noindex, nofollow" } ] },
+    { "source": "/", "headers": [ { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" } ] }
+  ]
+}
