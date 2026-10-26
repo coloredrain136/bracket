@@ -512,8 +512,13 @@ input[type=range]:disabled{ opacity:.4; }
 .pp-foot{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; font-size:var(--t-xs); color:var(--faint); flex-wrap:wrap; }
 .pp-foot .linkbtn{ font-size:var(--t-xs); color:var(--faint); }
 .pp .acts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-.pcount{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size:var(--t-sm); font-weight:700; color:var(--accent-text); }
-.pcount svg{ width:17px; height:17px; }
+.pcount{ display:flex; align-items:center; gap:5px; margin-top:5px; font-size:var(--t-xs); font-weight:500; color:var(--faint); }
+.prow{ display:flex; align-items:center; gap:12px; width:100%; margin:4px 0 16px; padding:13px 14px; border-radius:var(--r-md); background:var(--seg-bg); text-align:left; color:var(--sub); }
+.prow > svg:first-child{ width:20px; height:20px; color:var(--sub); }
+.prow span{ flex:1; font-weight:600; font-size:var(--t-sm); color:var(--text); }
+.prow small{ display:block; font-weight:500; font-size:var(--t-xs); color:var(--sub); margin-top:1px; }
+.prow .chev{ width:16px; height:16px; color:var(--faint); }
+.pcount svg{ width:14px; height:14px; }
 .newtag{ font:800 10.5px/1 var(--font); padding:4px 7px; border-radius:6px; background:#ff9f0a; color:#2b1a00; }
 .preview{ padding:14px 16px; border-radius:var(--r-md); background:var(--seg-bg); font-size:var(--t-md); }
 
@@ -678,7 +683,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-8';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-9';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -911,36 +916,6 @@ function quality(t, evCount){
   return { q, label: QLABEL[q], reasons };
 }
 const meter = (q, big) => `<span class="meter${big ? ' big' : ''}" data-q="${q}" aria-label="${q} of 5">${[1,2,3,4,5].map(i => `<i class="${i <= q ? 'f' : ''}"></i>`).join('')}</span>`;
-
-// Fit for you: how this tournament's events line up with your rating (needs the event list)
-// Fit for you: how this tournament's events line up with your ratings (the right one per event type)
-function fitFor(events){
-  const real = events.map(e => ({ e, r: skillRange(e.skill), R: ratingFor(evKind(e)), k: evKind(e) })).filter(x => x.r && !x.r.open && x.R != null);
-  const fits = real.filter(x => covers(x.r.lo, x.r.hi, x.R));
-  const ups = real.filter(x => isUp(x.r.lo, x.r.hi, x.R));
-  const reasons = [];
-  const lab = x => specificCount() ? `your ${kindName(x.k).toLowerCase()} ${rt(x.R)}` : rt(x.R);
-  if(!real.length) return { q: 0, label: FITLABEL[0], reasons: ["The events here don't list levels (Open only), so Bracket can't tell"] };
-  if(!fits.length && !ups.length) return { q: 1, label: FITLABEL[1], reasons: [`No events at ${specificCount() ? 'your levels' : rt(baseR())} or one step up`] };
-  if(!fits.length){
-    reasons.push(`Nothing right at your level, but ${pl(ups.length, 'play-up event')}`);
-    reasons.push('Expect tougher matches if you play up');
-    return { q: 2, label: FITLABEL[2], reasons };
-  }
-  const posOf = x => { const hi = x.r.hi >= 9 ? x.r.lo + 0.5 : x.r.hi; return Math.max(0, Math.min(1, (x.R - x.r.lo) / Math.max(0.01, hi - x.r.lo))); };
-  const best = fits.reduce((a, x) => posOf(x) > posOf(a) ? x : a, fits[0]);
-  const pos = posOf(best);
-  let q = pos >= 0.6 ? 5 : pos >= 0.3 ? 4 : 3;
-  reasons.push(`${pl(fits.length, 'event')} at your level`);
-  reasons.push(pos >= 0.6 ? `At ${lab(best)} you'd be near the top of that level` : pos >= 0.3 ? `At ${lab(best)} you'd be right in the middle of that level` : `At ${lab(best)} you'd be near the bottom of that level, so expect strong opponents`);
-  const most = Math.max(...fits.map(x => x.e.registered || 0));
-  if(most < 3){ reasons.push(`Only ${pl(most, 'team')} signed up in your events so far`); if(q > 3) q--; }
-  else reasons.push(`Up to ${most} teams signed up in your events`);
-  const full = fits.filter(x => x.e.max && x.e.registered >= x.e.max).length;
-  if(full === fits.length){ q = Math.max(2, q - 2); reasons.push('Your events are full (waitlist only)'); }
-  if(ups.length) reasons.push(`Plus ${pl(ups.length, 'play-up event')} if you want a challenge`);
-  return { q, label: FITLABEL[q], reasons };
-}
 
 function priceText(t){
   if(t.free) return 'Free';
@@ -1367,7 +1342,6 @@ function renderSettings(){
     <div class="group">
       ${row('sp-home', 'pin', 'green', 'Home', S.home ? (S.home.src === 'gps' ? (S.home.near ? 'Near ' + S.home.near : 'My location') : S.home.name) : 'Not set')}
       ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) + (specificCount() ? ` +${specificCount()}` : '') : specificCount() ? ratingSummary() : 'Not set')}
-      <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>Shows how each tournament fits your rating</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
     </div>
     <p class="gfoot">Home is used for distances. Your rating finds events at your level. ${acct.user ? 'Both sync to your account.' : 'Both stay on this phone.'}</p>
     <div class="group-l">Display</div>
@@ -1405,10 +1379,9 @@ function settingsPage(p){
     <p class="gfoot">DUPR gives separate doubles and singles ratings. Bracket uses the right one for each event (mixed counts as doubles). Anything left on “General” uses your general rating.</p>
     <div class="group-l">How Bracket uses it</div>
     <div class="group">
-      <div class="gitem">${tile('chart', 'orange')}<span class="t">Fit for you<small>A meter in each tournament for how well it fits you</small></span>${swHTML('sw-fit', S.fit, 'Fit for you')}</div>
       <div class="gitem noicon"><span class="t">Level filter<small>In Filters, “My level” shows tournaments with events at your level. “+ Play up” also includes one step up.</small></span></div>
     </div>
-    <p class="gfoot">Bracket can't see your DUPR account or match history. It only compares your rating with each event's level range.</p></div>`;
+    <p class="gfoot">Bracket can't see your DUPR account. It only compares your rating with each event's level range.</p></div>`;
   if(p === 'looks') return `<div class="spage">${pageHead('Appearance')}
     <div class="group-l">Light or dark</div>
     <div class="group"><div class="gitem col">${segHTML('mode', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], S.mode)}</div></div>
@@ -1429,7 +1402,7 @@ function settingsPage(p){
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
   if(p === 'account'){
-    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings, home city and the Fit for you setting<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings and home city<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
     if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
       ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
     return `<div class="spage">${pageHead('Account')}
@@ -1482,12 +1455,11 @@ function settingsPage(p){
       <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
     <div class="group-l">Quality meter</div>
     <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
-    <div class="group-l">Fit for you</div>
-    <div class="group"><p>When you've set your rating, each tournament shows a <b>Fit for you</b> meter. It looks at whether there are events at your level, where your rating sits in those events (near the top of 3.0–3.5 is easier than near the bottom), how many teams have signed up, and whether those events are already full.</p><p>It can't see your match history, wins or partners, so treat it as a starting point. You can turn it off in Settings.</p></div>
+
     <div class="group-l">Sharing and your calendar</div>
     <div class="group"><ul><li><b>Share</b> sends a link to a tournament. In a text or on Facebook it shows the name, dates and city, and opens right to that tournament in Bracket.</li><li><b>Add to calendar</b> puts the tournament days in your iPhone or Google calendar.</li></ul></div>
     <div class="group-l">Find a partner</div>
-    <div class="group"><ul><li>Open a tournament and scroll to <b>Find a partner</b>. Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
+    <div class="group"><ul><li>Open a tournament and tap <b>Need a partner?</b> (under the events list). Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
     <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
@@ -1605,21 +1577,6 @@ function detailBody(t){
     h += `<div class="d-error">Couldn't load the full details right now. <button class="linkbtn" data-act="retry-detail" data-slug="${esc(slug)}">Try again</button></div>`;
   }
 
-  // ---- Fit for you
-  if(S.fit){
-    if(R == null){
-      h += `<div class="blk fit"><h3>Fit for you</h3><p class="desc">Add your rating and Bracket will show how well this tournament fits you.</p><div class="btnrow"><button class="btn sm ghost" data-act="go-rating">${icon('target')}Add your rating</button></div></div>`;
-    } else if(events.length){
-      const f = fitFor(events);
-      h += `<div class="blk fit"><h3>Fit for you<small>${specificCount() ? 'your ratings' : 'your rating ' + rt(R)}</small></h3><div class="qhead">${meter(f.q, true)}<b>${f.label}</b></div><ul class="reasons">${f.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul><p class="fine">Based on your rating and each event's level. Bracket can't see your match history.</p></div>`;
-    } else if(loading){
-      h += '<div class="skel sm" style="margin:16px 0"></div>';
-    }
-  }
-
-  // ---- Find a partner
-  if(sb && tt.startDay && !isPast(tt)) h += partnerBlock(tt, events);
-
   // ---- Quality
   const q = quality(Object.assign({}, tt, { players }), events.length || null);
   h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
@@ -1677,6 +1634,12 @@ function detailBody(t){
     h += `<div class="blk"><h3>Events</h3><p class="desc">${data.eventsError ? "Couldn't load the events list." : 'No events listed yet.'} See them on <a href="${PT}/tournaments/${esc(slug)}/events" target="_blank" rel="noopener">pickleballtournaments.com</a>.</p></div>`;
   }
 
+  // ---- Find a partner: one quiet row; the list opens in its own sheet
+  if(sb && tt.startDay && !isPast(tt)){
+    const n = (partner.bySlug[slug] || []).filter(p => p.status === 'open' && !(acct.user && p.user_id === acct.user.id)).length;
+    h += `<button class="prow" data-act="p-open" data-slug="${esc(slug)}">${icon('people')}<span>Need a partner?<small>${n ? pl(n, 'player') + ' looking' : "See who's looking, or post"}</small></span>${icon('chev', 'i chev')}</button>`;
+  }
+
   // ---- About
   const desc = cleanText(det.description);
   if(desc || det.prizeInfo){
@@ -1718,6 +1681,7 @@ function openTournament(slug){
   loadDetail(slug);
 }
 function refreshOpenDetail(){
+  if(partnerSheet){ const pb = $('[data-pbody]', partnerSheet); if(pb) pb.innerHTML = partnerBlock(findT(partnerSheet.dataset.slug)); }
   const slug = ui.openSlug;
   if(!slug) return;
   const t = findT(slug);
@@ -2071,7 +2035,7 @@ function partnerBlock(t, events){
   const asked = new Set(partner.sent.map(r => r.post_id));
   const mineOpen = posts.some(p => p.user_id === me && p.status === 'open');
   const others = posts.filter(p => p.user_id !== me);
-  let h = `<div class="blk"><h3>Find a partner<small>${others.length ? pl(others.length, 'player') + ' looking' : ''}</small></h3>`;
+  let h = '';
   if(loading) h += '<div class="skel sm"></div>';
   else if(!posts.length) h += `<p class="desc" style="margin-bottom:10px">Nobody's looking yet. Post that you need a partner and other players can ask to team up.</p>`;
   posts.forEach(p => {
@@ -2084,8 +2048,15 @@ function partnerBlock(t, events){
   });
   if(!acct.user) h += `<button class="gbtn" data-act="signin" style="margin-top:6px">${GOOGLE_G}Sign in to post or ask</button><p class="fine">Anyone can look. Signing in keeps it to real players.</p>`;
   else if(!mineOpen) h += `<button class="btn ghost wide" data-act="p-new" data-slug="${esc(t.slug)}" style="margin-top:6px">${icon('people')}I'm looking for a partner</button>`;
-  h += `<p class="fine">Only your first name, last initial, rating and note are shown. Contact info is shared only with the player you ask.</p></div>`;
+  h += `<p class="fine">Only your first name, last initial, rating and note are shown. Contact info is shared only with the player you ask.</p>`;
   return h;
+}
+let partnerSheet = null;
+function openPartners(slug){
+  const t = findT(slug);
+  partnerSheet = openSheet({ title: 'Find a partner', body: `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-sm)">${esc(t.title)}</p><div data-pbody>${partnerBlock(t)}</div>`, onClose: () => { partnerSheet = null; } });
+  partnerSheet.dataset.slug = slug;
+  loadPartnerPosts(slug);
 }
 function eventChoices(slug){
   const d = detailOf(slug);
@@ -2598,6 +2569,7 @@ document.addEventListener('click', e => {
     case 'fb-again': ui.fb = { kind: 'idea' }; renderSettings(); break;
     case 'fbkind': ui.fb.kind = el.dataset.v; document.querySelectorAll('[data-act="fbkind"]').forEach(b => b.setAttribute('aria-pressed', b === el)); break;
     case 'fbsend': sendFeedback(el); break;
+    case 'p-open': openPartners(slug); break;
     case 'p-new': if(!acct.user){ signIn(); break; } openNewPost(slug); break;
     case 'p-ev': {
       ui.pEvent = el.dataset.v; el.parentElement.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === el));
