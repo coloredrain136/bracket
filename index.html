@@ -540,7 +540,8 @@ input[type=range]:disabled{ opacity:.4; }
 .wcard{ max-width:440px; margin:0 auto; }
 .whero{ text-align:center; margin-bottom:26px; }
 .whero img{ width:88px; height:88px; border-radius:22px; box-shadow:var(--shadow); }
-.whero h1{ margin:16px 0 6px; font:800 36px/1 var(--display); letter-spacing:-.02em; }
+.whero .kicker{ margin-top:18px; font:800 12.5px/1.3 var(--font); letter-spacing:.2em; color:var(--accent-text); }
+.whero h1{ margin:10px 0 8px; font-size:44px !important; font:800 36px/1 var(--display); letter-spacing:-.02em; }
 .whero p{ margin:0; color:var(--sub); font-size:var(--t-md); }
 .wsec{ padding:18px; border-radius:var(--r-xl); margin-bottom:14px; }
 .wsec h2{ margin:0 0 4px; font:800 var(--t-lg) var(--display); }
@@ -674,7 +675,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-5';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-6';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -2335,7 +2336,7 @@ function showWelcome(){
   const w = $('#welcome');
   w.hidden = false;
   w.innerHTML = `<div class="wcard">
-    <div class="whero"><img src="/icons/icon-192.png" alt=""><h1>Bracket</h1><p>Every Michigan pickleball tournament, easy to browse.</p></div>
+    <div class="whero"><div class="kicker">MICHIGAN PICKLEBALL TOURNAMENTS</div><h1>Bracket</h1><p>Every tournament in one place, easy to browse.</p></div>
     <section class="wsec glass"><h2>Where do you play from?</h2><p>So Bracket can show how far each tournament is.</p>${locPicker()}</section>
     <section class="wsec glass"><h2>Your rating <span style="font:600 13px var(--font);color:var(--faint)">optional</span></h2><p>Your DUPR, or the level you usually play. Bracket uses it to find events at your level. Not sure? Leave it as “Not set”.</p>${ratingSelect('wRating')}</section>
     <div class="wfoot"><button class="btn primary wide" data-act="welcome-done">Show tournaments</button><button class="linkbtn" data-act="welcome-done">Skip for now</button></div>
