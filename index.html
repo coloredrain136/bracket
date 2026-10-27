@@ -695,7 +695,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-13';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-14';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -751,8 +751,11 @@ let LIST = load(LS.list, null);          // { fetchedAt, savedAt, items }
 let DET = load(LS.details, {});          // { slug: { at, data } }
 const ui = { tab: 'browse', q: '', loading: false, error: null, openSlug: null, detLoading: {}, detError: {}, evMine: true, descOpen: false, scroll: {}, spage: null, calMonth: null, calDay: null, fx: {}, config: null };
 
-function saveSettings(){ save(LS.settings, S); scheduleProfile(); }
-function saveSaves(){ save(LS.saves, SAVES); scheduleSync(); }
+// Edit counters: a pull from the account must never undo a change made while it was loading (bracket-14 fix:
+// unstarring right after opening the app came back as starred once the slow pull finished)
+let savesRev = 0, settingsRev = 0;
+function saveSettings(){ settingsRev++; save(LS.settings, S); scheduleProfile(); }
+function saveSaves(){ savesRev++; save(LS.saves, SAVES); scheduleSync(); }
 
 /* ---------------- Helpers ---------------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -2169,6 +2172,7 @@ async function pullSync(){
   if(!sb || !acct.user || acct.syncing) return;
   acct.syncing = true; acct.error = null; renderSyncLine();
   const uid = acct.user.id;
+  const rev0 = savesRev, srev0 = settingsRev;
   try {
     const [sv, pf] = await Promise.all([
       sb.from('bracket_saves').select('kind,slug,snap'),
@@ -2181,10 +2185,11 @@ async function pullSync(){
     acct.mirror = {};
     ['interested', 'registered'].forEach(k => Object.keys(remote[k]).forEach(sl => { acct.mirror[k + '|' + sl] = JSON.stringify(remote[k][sl]); }));
     const first = S.syncedUser !== uid || S.syncDirty;
+    const editedSaves = savesRev !== rev0;   // you starred / unstarred while this was loading: keep yours, push it below
     if(first) SAVES = { interested: Object.assign({}, remote.interested, SAVES.interested), registered: Object.assign({}, remote.registered, SAVES.registered) };
-    else SAVES = remote;
+    else if(!editedSaves) SAVES = remote;
     save(LS.saves, SAVES);
-    const p = pf.data;
+    const p = settingsRev !== srev0 ? null : pf.data;   // same for rating / home / partners changed mid-pull
     if(p){
       const pr = p.ratings && typeof p.ratings === 'object' ? p.ratings : null;
       if(first){
