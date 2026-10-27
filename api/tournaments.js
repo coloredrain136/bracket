@@ -11,7 +11,7 @@ import { getActionId, searchPage, getEvents, isMichigan, skillRange } from './_l
 export const config = { maxDuration: 45 };
 
 const MAX_PAGES = 6;
-const VERSION = 'bracket-10';
+const VERSION = 'bracket-11';
 
 async function allPages(actionId, log){
   const first = await searchPage(actionId, 1);
@@ -36,9 +36,12 @@ async function pool(items, n, fn){
   return out;
 }
 
-function summarizeEvents(events){
+export function summarizeEvents(events){   // exported for tests
   const formats = new Set(), skills = new Map(), ages = new Set(), days = new Set();
   const byFormat = {};   // level ranges per format, so Bracket can use your mixed / singles rating for those events
+  // Every event in short form, so cards can name your event and the hourly alert check can see how full picked events are:
+  // [id, title, format, lo, hi, registered, max, waitlist]   (lo/hi null when the event has no level)
+  const list = [];
   let timed = false, registered = 0;
   events.forEach(e => {
     if(e.canceled) return;
@@ -47,16 +50,17 @@ function summarizeEvents(events){
     const r = skillRange(e.skill);
     if(r){
       skills.set(r.lo + '-' + r.hi, [r.lo, r.hi]);
-      const list = byFormat[fmt] = byFormat[fmt] || [];
-      if(!list.some(x => x[0] === r.lo && x[1] === r.hi)) list.push([r.lo, r.hi]);
+      const fl = byFormat[fmt] = byFormat[fmt] || [];
+      if(!fl.some(x => x[0] === r.lo && x[1] === r.hi)) fl.push([r.lo, r.hi]);
     }
+    list.push([e.id || '', e.title.slice(0, 90), fmt, r ? r.lo : null, r ? r.hi : null, e.registered, e.max, e.waitlist]);
     if(e.age) ages.add(e.age);
     if(/\d{1,2}:\d{2}\s*[AP]M/i.test(e.date)) timed = true;
     const d = e.date.match(/^[A-Za-z]{3} \d{1,2} \d{4}/);
     if(d) days.add(d[0]);
     registered += e.registered;
   });
-  return { n: events.filter(e => !e.canceled).length, formats: [...formats], skills: [...skills.values()], byFormat, ages: [...ages].slice(0, 12), timed, registered };
+  return { n: events.filter(e => !e.canceled).length, formats: [...formats], skills: [...skills.values()], byFormat, list, ages: [...ages].slice(0, 12), timed, registered };
 }
 
 export default async function handler(req, res){
