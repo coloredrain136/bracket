@@ -226,25 +226,12 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .lv{ font-weight:700; color:var(--accent-text); }
 .lv.up{ color:var(--blue); }
 .lv.no{ color:var(--faint); font-weight:600; }
-.lv.pick{ color:var(--accent-text); }
 .fnote{ margin:0 2px 10px; padding:9px 12px; border-radius:12px; background:var(--seg-bg); }
 .lvline{ font-size:var(--t-sm); margin:0 0 4px; line-height:1.35; overflow-wrap:anywhere; }
-.ev .pick{ flex:none; width:34px; height:34px; border-radius:50%; border:2px solid var(--faint); background:transparent; display:grid; place-items:center; color:transparent; padding:0; margin-left:-2px; }
-.ev .pick svg{ width:18px; height:18px; }
-.ev .pick[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .ev .who{ color:var(--accent-text); font-weight:700; }
 .ev.up .who{ color:var(--blue); }
-.yours{ margin-bottom:6px; }
-.evother{ border-top:1px solid var(--line); margin-top:10px; }
-.evother > summary{ list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 2px; font-weight:800; font-size:var(--t-md); cursor:pointer; }
-.evother > summary::-webkit-details-marker{ display:none; }
-.evother > summary small{ color:var(--sub); font-weight:600; font-size:var(--t-xs); }
-.evother > summary svg{ width:16px; height:16px; color:var(--faint); transition:transform var(--fast); }
-.evother[open] > summary svg{ transform:rotate(90deg); }
 .cost ul{ margin:0; padding-left:18px; }
 .cost li{ margin:4px 0; font-size:var(--t-md); line-height:1.4; }
-.cost .est{ margin-top:10px; padding:11px 13px; border-radius:12px; background:var(--accent-soft); font-size:var(--t-md); line-height:1.4; }
-.cost .est b{ font-weight:800; }
 .pcard{ padding:14px; }
 .pcard + .pcard{ border-top:1px solid var(--line); }
 .pcard .prow2{ display:flex; gap:10px; align-items:center; margin-top:10px; }
@@ -708,7 +695,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-12';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-13';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -751,7 +738,7 @@ S.filters = Object.assign({}, DEFAULT_FILTERS, S.filters || {});
 if(S.level != null && S.rating == null){ const r = parseFloat(S.level); if(r) S.rating = r; }
 delete S.level;
 // Optional ratings by event type (bracket-7). Empty = use the general rating.
-const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, events: true, early: true, changes: false };
+const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, early: true, changes: false };
 S.notify = Object.assign({}, NOTIFY_DEFAULTS, S.notify || {});
 S.ratings = { doubles: (S.ratings && S.ratings.doubles) ?? null, singles: (S.ratings && S.ratings.singles) ?? null };   // bracket-8: mixed uses doubles
 if(S.cardLine == null) S.cardLine = false;   // bracket-12: the ✓ best-event line on cards is opt-in
@@ -908,10 +895,6 @@ function tourRanges(t){
   const Rs = [...new Set([S.rating, ...RKINDS.map(k => S.ratings[k[0]])].filter(v => v != null))];
   return (t.ev.skills || []).filter(r => !isOpenRange(r[0], r[1])).flatMap(r => Rs.map(R => [r[0], r[1], R]));
 }
-/* Picked events (bracket-11): saved with the tournament as snap.picks = [event id (or title)] */
-const evKey = e => (e.id ? String(e.id) : '') || String(e.title || '');
-const pickHit = (picks, id, title) => (!!id && picks.includes(String(id))) || (!!title && picks.includes(String(title)));
-function picksOf(slug){ const s = SAVES.registered[slug] || SAVES.interested[slug]; return s && Array.isArray(s.picks) ? s.picks : []; }
 const shortEv = title => String(title || '').split(':')[0].trim();
 // One event from the list's short form [id, title, format, lo, hi, registered, max, waitlist] → "Mixed Doubles 3.5–3.99 · 5 of 16 teams"
 function evLine(x){
@@ -922,11 +905,6 @@ function evLine(x){
 }
 function cardLevel(t){
   const list = t.ev && Array.isArray(t.ev.list) ? t.ev.list : null;
-  const picks = picksOf(t.slug);
-  if(list && picks.length){
-    const mine = list.filter(x => pickHit(picks, x[0], x[1]));
-    if(mine.length) return { k: 'pick', txt: '★ ' + evLine(mine[0]) + (mine.length > 1 ? ` · +${mine.length - 1} more` : '') };
-  }
   if(!S.cardLine) return null;   // Settings → Display → "Best event on cards" (off by default)
   if(!list) return levelInfo(t);
   if(!hasRating()) return null;
@@ -1046,7 +1024,7 @@ function snap(t){
   };
 }
 // Keep a tournament's own alert choices when it's saved the other way too (Interested ↔ Registered)
-function withAlerts(s, other){ if(other && other.alerts != null) s.alerts = other.alerts; if(other && Array.isArray(other.picks) && other.picks.length) s.picks = other.picks.slice(); return s; }
+function withAlerts(s, other){ if(other && other.alerts != null) s.alerts = other.alerts; return s; }
 function findT(slug){
   const live = LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : null;
   if(live) return live;
@@ -1465,7 +1443,7 @@ function renderSettings(){
     <div class="group-l">Display</div>
     <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}
       <div class="gitem">${tile('check', 'green')}<span class="t">Best event on cards<small>Adds a line like “✓ Mixed 3.0–3.49 · 6 of 16 teams” to each tournament</small></span>${swHTML('sw-cardline', S.cardLine, 'Best event on cards')}</div></div>
-    <p class="gfoot">Events you picked (★) always show on their card.</p>
+
     <div class="group-l">Help</div>
     <div class="group">
       ${row('sp-help', 'book', 'yellow', 'How Bracket works')}
@@ -1617,10 +1595,8 @@ function settingsPage(p){
       <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p><p>Want each card to name the event that fits you best, like “Mixed Doubles 3.5–3.99 · 5 of 16 teams”? Turn on <b>Settings → Best event on cards</b>.</p></div>
     <div class="group-l">Partners</div>
     <div class="group"><p>Play mixed or doubles with someone rated higher or lower? Add them in <b>Settings → Partners</b> with their rating. Bracket uses the higher of your two ratings to find your team's level (that's how most tournaments place teams) and marks those events “With Sam”.</p><p>Example: you 3.40 + partner 3.80 → your team plays 3.5–4.0 events (including 3.5–3.99).</p></div>
-    <div class="group-l">Your events</div>
-    <div class="group"><p>Only interested in a few events at a tournament? Open it and tap the ○ next to each one you'd play. They move to the top under <b>Your events</b>, the rest fold into <b>Other events</b>, and the card shows your event. Picking an event also saves the tournament to Interested.</p><p>With notifications on, Bracket can tell you when one of your events is almost full or gets a waitlist.</p></div>
     <div class="group-l">Prices</div>
-    <div class="group"><p>The price is the registration fee. Many tournaments charge for each event on top of that, so cards say “$50 + event fees”. When the organizer lists their fees, Bracket shows them under <b>Cost</b>, and adds up the events you picked. Their site also adds small service fees at checkout.</p></div>
+    <div class="group"><p>The price is the registration fee. Many tournaments charge for each event on top of that, so cards say “$50 + event fees”. When the organizer lists their fees, Bracket shows them under <b>Cost</b>. Their site also adds small service fees at checkout.</p></div>
     <div class="group-l">Quality meter</div>
     <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
 
@@ -1629,7 +1605,7 @@ function settingsPage(p){
     <div class="group-l">Find a partner</div>
     <div class="group"><ul><li>Open a tournament and tap <b>Need a partner?</b> (under the events list). Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
     <div class="group-l">Notifications</div>
-    <div class="group"><ul><li>Turn them on in <b>Settings → Notifications</b>. You need to be signed in, and on iPhone Bracket has to be on your Home Screen.</li><li>Pick what you want: partner requests, the day before a tournament you registered for, registration closing, your events filling up, early-bird price ending, or changes.</li><li>Want something different for one tournament? Open it and tap <b>Alerts</b>.</li><li>Bracket sends at most one alert per tournament a day, and only between 9am and 8pm.</li></ul></div>
+    <div class="group"><ul><li>Turn them on in <b>Settings → Notifications</b>. You need to be signed in, and on iPhone Bracket has to be on your Home Screen.</li><li>Pick what you want: partner requests, the day before a tournament you registered for, registration closing, early-bird price ending, or changes.</li><li>Want something different for one tournament? Open it and tap <b>Alerts</b>.</li><li>Bracket sends at most one alert per tournament a day, and only between 9am and 8pm.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
     <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
@@ -1690,12 +1666,6 @@ function feeLines(desc){
     if(!out.includes(l)) out.push(l);
   });
   return out.slice(0, 4);
-}
-// One clear "$X per event" amount, or null if there's none or more than one
-function perEventFee(lines){
-  const found = new Set();
-  lines.forEach(l => { const re = /\$\s?(\d+(?:\.\d{1,2})?)\s*(?:\/|per|each|a|for each)\s*(?:additional\s+)?(?:event|division|bracket)\b/gi; let m; while((m = re.exec(l))) found.add(+m[1]); });
-  return found.size === 1 ? [...found][0] : null;
 }
 function detailBody(t){
   const slug = t.slug;
@@ -1768,42 +1738,18 @@ function detailBody(t){
     h += `<div class="d-error">Couldn't load the full details right now. <button class="linkbtn" data-act="retry-detail" data-slug="${esc(slug)}">Try again</button></div>`;
   }
 
-  // ---- Cost: what the organizer wrote about fees, plus an estimate for the events you picked
-  const desc = cleanText(det.description);
-  const fees = feeLines(desc);
-  if(fees.length || (tt.costPerEvent && !tt.free && data)){
-    const pe = perEventFee(fees);
-    const n = picksOf(slug).length;
-    let est = '';
-    if(pe != null && tt.costPerEvent && curPrice != null && n) est = `<div class="est">Your ${pl(n, 'event')}: about <b>$${Math.round(curPrice + pe * n)}</b> ($${Math.round(curPrice)} + ${n} × $${Math.round(pe)}), plus their site's service fees.</div>`;
-    else if(pe != null && tt.costPerEvent && curPrice != null) est = `<p class="fine" style="margin-top:8px">Tap ○ on the events you'd play and Bracket adds up the cost.</p>`;
-    h += `<div class="blk cost"><h3>Cost${fees.length ? '<small>from the organizer</small>' : ''}</h3>${fees.length ? `<ul>${fees.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="desc" style="margin:0">Each event costs extra on top of the $${Math.round(curPrice || 0)} registration. The organizer didn't list event prices here, so check on their site.</p>`}${est}</div>`;
-  }
-
-  // ---- Where
-  if(det.venue || det.street || tt.location){
-    const lines = [det.street, det.cityStateZip].filter(Boolean).join(', ') || tt.location;
-    const q2 = [det.venue, det.street, det.cityStateZip].filter(Boolean).join(', ') || tt.location;
-    h += `<div class="blk"><h3>Where</h3><div class="addr"><b>${esc(det.venue || tt.city || 'Venue')}</b><span>${esc(lines)}</span></div>
-      <div class="btnrow"><a class="btn sm ghost" href="${esc(mapsUrl(q2, det.lat, det.lng))}" target="_blank" rel="noopener">${icon('pin')}Open in Maps</a>${det.website && /^https?:/i.test(det.website) ? `<a class="btn sm ghost" href="${esc(det.website)}" target="_blank" rel="noopener">${icon('globe')}Website</a>` : ''}</div></div>`;
-  } else if(loading){
-    h += '<div class="skel sm" style="margin:16px 0"></div>';
-  }
-
   // ---- Quality
   const q = quality(Object.assign({}, tt, { players }), events.length || null);
   h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
 
-  // ---- Events: the ones you picked on top, the rest grouped by level
+  // ---- Events, grouped by level (filtered to match Format / Level filters when they're on)
   if(events.length){
-    const picks = picksOf(slug);
     const tagged = events.map(e => {
       const r = skillRange(e.skill);
       const l = R != null && r && !r.open ? evLevel(fmtOf(e), r.lo, r.hi) : { mine: false, up: false, who: null };
-      return Object.assign({ r, mine: l.mine, upE: l.up, who: l.who, key: evKey(e), picked: pickHit(picks, e.id, e.title) }, e);
+      return Object.assign({ r, mine: l.mine, upE: l.up, who: l.who }, e);
     });
-    const yours = tagged.filter(e => e.picked);
-    const fon = evFilterOn(), restAll = tagged.filter(e => !e.picked);
+    const fon = evFilterOn(), restAll = tagged;
     const fmatch = e => evMatches(fmtOf(e), e.r && !e.r.open ? e.r.lo : (e.r ? 0 : null), e.r && !e.r.open ? e.r.hi : (e.r ? 9 : null));
     const filtering = fon && !ui.evAll;
     const rest = filtering ? restAll.filter(fmatch) : restAll;
@@ -1815,8 +1761,7 @@ function detailBody(t){
       const meta = [e.age && !/^\(?any\)?$/i.test(e.age) ? 'Age ' + e.age.replace(/[()]/g, '') : '', evWhen(e), e.bracket].filter(Boolean).join(' · ');
       const pct = e.max ? Math.min(100, Math.round(e.registered / e.max * 100)) : 0;
       const who = e.who && (e.mine || e.upE) ? `<span class="who">With ${esc(e.who)}${e.upE ? ' (play up)' : ''}</span>` : '';
-      const lvl = e.picked && e.r ? `<span style="white-space:nowrap"> ${esc(evSkill(e.skill))}</span>` : '';
-      return `<div class="ev${e.mine ? ' mine' : e.upE ? ' up' : ''}"><button class="pick" data-act="pick" data-slug="${esc(slug)}" data-k="${esc(e.key)}" aria-pressed="${e.picked}" aria-label="${e.picked ? 'Remove from your events' : 'Add to your events'}: ${esc(evName(e))}">${icon('check')}</button><div class="n"><b>${esc(evName(e))}${lvl}</b>${who}<span>${esc(meta)}</span></div>
+      return `<div class="ev${e.mine ? ' mine' : e.upE ? ' up' : ''}"><div class="n"><b>${esc(evName(e))}</b>${who}<span>${esc(meta)}</span></div>
         <div class="c"><b>${e.max ? `${e.registered}/${e.max}` : e.registered}</b>${word}${e.max ? `<div class="bar2"><i class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></i></div>` : ''}${e.waitlist ? `<div class="wl">${e.waitlist} waitlist</div>` : ''}</div></div>`;
     };
     const grouped = list => {
@@ -1843,24 +1788,32 @@ function detailBody(t){
     const showAll = showMine ? `<p class="fine">Showing ${pl(restMU, 'event')} at or one step above ${S.partners.length ? 'your (and your team’s) levels' : specificCount() ? 'your levels' : rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${rest.length}</button></p>` : '';
     const counts = `${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}`;
     const fnote = !fon ? '' : filtering
-      ? `<p class="fine fnote">${rest.length ? `Showing ${pl(rest.length, 'event')} that ${rest.length === 1 ? 'matches' : 'match'} your filters (${esc(filterWords())}).` : `None of the other events match your filters (${esc(filterWords())}).`} <button class="linkbtn" data-act="evall">Show all ${restAll.length}</button></p>`
+      ? `<p class="fine fnote">${rest.length ? `Showing ${pl(rest.length, 'event')} that ${rest.length === 1 ? 'matches' : 'match'} your filters (${esc(filterWords())}).` : `None of the events match your filters (${esc(filterWords())}).`} <button class="linkbtn" data-act="evall">Show all ${restAll.length}</button></p>`
       : `<p class="fine fnote">Showing all ${restAll.length} events. <button class="linkbtn" data-act="evall">Only show ${esc(filterWords())}</button></p>`;
-    if(yours.length){
-      h += `<div class="blk"><h3><span>Your events <small>${yours.length}</small></span></h3><div class="yours">${yours.map(evRow).join('')}</div>
-        <p class="fine">These stay on top, show on the card, and can send you an alert when they fill up. Tap ✓ again to remove one.</p>`;
-      if(restAll.length) h += `<details class="evother"${ui.restOpen ? ' open' : ''} data-restopen><summary><span>Other events <small>${rest.length}</small></span>${icon('chev')}</summary>
-        ${toggle ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px">${toggle}</div>` : ''}${fnote}${grouped(rest)}${showAll}</details>`;
-      h += '</div>';
-    } else {
-      h += `<div class="blk"><h3><span>Events <small>${filtering ? `${rest.length} of ${events.length}` : counts}</small></span>${toggle}</h3>
-        ${fnote}<p class="fine" style="margin:-2px 2px 10px">Only into a few? Tap ○ on the events you'd play. They'll stay at the top.</p>${grouped(rest)}${showAll}`;
-      h += '</div>';
-    }
+    h += `<div class="blk"><h3><span>Events <small>${filtering ? `${rest.length} of ${events.length}` : counts}</small></span>${toggle}</h3>
+      ${fnote}${grouped(rest)}${showAll}</div>`;
     if(R != null && !S.partners.length && tagged.some(e => pKindOf(fmtOf(e)))) h += `<p class="fine">Playing with a partner? <button class="linkbtn" data-act="go-partners">Add their rating</button> and Bracket finds your team's level.</p>`;
   } else if(loading){
     h += '<div class="skel" style="margin:16px 0"></div>';
   } else if(data && !events.length){
     h += `<div class="blk"><h3>Events</h3><p class="desc">${data.eventsError ? "Couldn't load the events list." : 'No events listed yet.'} See them on <a href="${PT}/tournaments/${esc(slug)}/events" target="_blank" rel="noopener">pickleballtournaments.com</a>.</p></div>`;
+  }
+
+  // ---- Cost: what the organizer wrote about fees
+  const desc = cleanText(det.description);
+  const fees = feeLines(desc);
+  if(fees.length || (tt.costPerEvent && !tt.free && data)){
+    h += `<div class="blk cost"><h3>Cost${fees.length ? '<small>from the organizer</small>' : ''}</h3>${fees.length ? `<ul>${fees.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="desc" style="margin:0">Each event costs extra on top of the $${Math.round(curPrice || 0)} registration. The organizer didn't list event prices here, so check on their site.</p>`}</div>`;
+  }
+
+  // ---- Where
+  if(det.venue || det.street || tt.location){
+    const lines = [det.street, det.cityStateZip].filter(Boolean).join(', ') || tt.location;
+    const q2 = [det.venue, det.street, det.cityStateZip].filter(Boolean).join(', ') || tt.location;
+    h += `<div class="blk"><h3>Where</h3><div class="addr"><b>${esc(det.venue || tt.city || 'Venue')}</b><span>${esc(lines)}</span></div>
+      <div class="btnrow"><a class="btn sm ghost" href="${esc(mapsUrl(q2, det.lat, det.lng))}" target="_blank" rel="noopener">${icon('pin')}Open in Maps</a>${det.website && /^https?:/i.test(det.website) ? `<a class="btn sm ghost" href="${esc(det.website)}" target="_blank" rel="noopener">${icon('globe')}Website</a>` : ''}</div></div>`;
+  } else if(loading){
+    h += '<div class="skel sm" style="margin:16px 0"></div>';
   }
 
   // ---- Find a partner: one quiet row; the list opens in its own sheet
@@ -1890,7 +1843,7 @@ function detailFoot(t){
 
 let detailSheet = null;
 function openTournament(slug){
-  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true; ui.restOpen = false; ui.evAll = false;
+  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true; ui.evAll = false;
   loadPartnerPosts(slug);
   ui.openChanges = changesFor(slug);
   if(ui.openChanges.length){ markSeen(slug); renderBadge(); if(ui.tab === 'mine') renderMine(true); else if(ui.tab === 'browse') renderList(); }
@@ -2007,7 +1960,6 @@ const NOTIFY_TYPES = [
   ['partner', 'Partner requests', 'When someone asks to team up with you'],
   ['tomorrow', 'Tournament tomorrow', 'The day before a tournament you marked registered'],
   ['closing', 'Registration closing', '2 days before sign-up closes, if you haven’t registered yet'],
-  ['events', 'Your events filling up', 'When an event you picked is almost full or has a waitlist'],
   ['early', 'Early-bird price ending', 'The day before the price goes up'],
   ['changes', 'Changes', 'Price, dates or registration changed (off to start)']
 ];
@@ -2088,7 +2040,7 @@ function alertsBody(slug){
   const reg = !!SAVES.registered[slug];
   if(!saved) return `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-md)">Alerts work for tournaments you save. Tap ☆ to save this one, then choose what you want to hear about.</p><button class="btn primary wide" data-act="alerts-save" data-slug="${esc(slug)}">${icon('star')}Save this tournament</button>`;
   const a = savedAlerts(slug);
-  const types = NOTIFY_TYPES.filter(([k]) => k !== 'partner' && !(k === 'tomorrow' && !reg) && !((k === 'closing' || k === 'events') && reg));
+  const types = NOTIFY_TYPES.filter(([k]) => k !== 'partner' && !(k === 'tomorrow' && !reg) && !(k === 'closing' && reg));
   let h = '';
   if(!pushState.on) h += `<div class="banner" style="margin-top:0">${icon('bell')}<div><b>Notifications are off on this device.</b><button data-act="go-notify">Turn them on</button></div></div>`;
   h += `<div class="group" style="margin-top:12px"><div class="gitem noicon"><span class="t">Alerts for this tournament</span>${swHTML('alert-all', a !== 'off', 'Alerts for this tournament')}</div></div>`;
@@ -2773,22 +2725,6 @@ function toggleRegistered(slug){
   }
   afterSaveChange();
 }
-function togglePick(slug, key){
-  if(!key) return;
-  if(!savedSnap(slug)){
-    const t = findT(slug);
-    if(t.placeholder || t.fromDetail) return;
-    SAVES.interested[slug] = snap(t);
-    toast('Saved to Interested with your event');
-  }
-  const cur = picksOf(slug), title = (() => { const d = detailOf(slug); const e = d && d.events ? d.events.find(x => evKey(x) === key) : null; return e ? e.title : null; })();
-  const has = cur.includes(key) || (title && cur.includes(title));
-  const next = has ? cur.filter(k => k !== key && k !== title) : cur.concat(key).slice(-30);
-  ['interested', 'registered'].forEach(k => { const sv = SAVES[k][slug]; if(sv){ if(next.length) sv.picks = next; else delete sv.picks; } });
-  ui.restOpen = true;   // keep the rest of the events open while picking a few
-  saveSaves();
-  afterSaveChange();
-}
 function afterSaveChange(){
   renderBadge();
   if(ui.tab === 'browse') renderList();
@@ -2889,7 +2825,6 @@ document.addEventListener('click', e => {
     case 'retry-detail': loadDetail(slug, true); break;
     case 'more': ui.descOpen = true; refreshOpenDetail(); break;
     case 'evmine': ui.evMine = !ui.evMine; refreshOpenDetail(); break;
-    case 'pick': togglePick(slug, el.dataset.k); break;
     case 'sw-cardline': S.cardLine = !S.cardLine; el.setAttribute('aria-checked', S.cardLine); save(LS.settings, S); break;
     case 'evall': ui.evAll = !ui.evAll; refreshOpenDetail(); break;
     case 'go-partners': goSettingsPage('partners'); break;
@@ -3063,8 +2998,7 @@ document.addEventListener('input', e => {
   }
 });
 document.addEventListener('submit', e => e.preventDefault());
-// "Other events" stays open or closed across re-renders
-document.addEventListener('toggle', e => { if(e.target && e.target.matches && e.target.matches('[data-restopen]')) ui.restOpen = e.target.open; }, true);
+
 
 /* Status-bar strip and the search bar's frosted background follow the scroll position.
    Checked on scroll, on tab change and after every Browse render, so it can't get stuck. */

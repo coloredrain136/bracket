@@ -6,7 +6,6 @@
 // alert per tournament per day, and only between 9am and 8pm Michigan time:
 //   tomorrow  – a tournament you marked registered starts tomorrow
 //   closing   – registration closes within 2 days (saved, not marked registered)
-//   events    – an event you picked in that tournament is almost full or has a waitlist (saved, not registered)
 //   early     – the price goes up within a day (early-bird ending)
 //   changes   – price, dates or registration changed since you last looked (off by default)
 //   partner   – someone asked to team up with you (any time between 9 and 8)
@@ -17,7 +16,7 @@ import { pushReady, sendPush } from './_lib/push.js';
 
 export const config = { maxDuration: 60 };
 
-export const DEFAULTS = { partner: true, tomorrow: true, closing: true, events: true, early: true, changes: false };
+export const DEFAULTS = { partner: true, tomorrow: true, closing: true, early: true, changes: false };
 const TZ = 'America/Detroit';
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -42,32 +41,6 @@ function ptTime(s){
 }
 const money = n => '$' + Math.round(n);
 
-// "Mixed Doubles: (3.50 To 3.99) Age: (Any)" + 3.5, 3.99 → "Mixed Doubles 3.5–3.99"
-const lvTxt = n => (Math.round(n * 100) % 10 ? n.toFixed(2) : n.toFixed(1));
-function evLabel(e){
-  const name = String(e[1] || '').split(':')[0].trim() || e[2] || 'Your event';
-  const lo = e[3], hi = e[4];
-  if(lo == null) return name;
-  if(lo === 0 && hi === 9) return name + ' (Open)';
-  return name + ' ' + (hi >= 9 ? lvTxt(lo) + ' and up' : lo <= 0 ? 'up to ' + lvTxt(hi) : lvTxt(lo) + '–' + lvTxt(hi));
-}
-const picked = (picks, e) => picks.includes(e[0]) || picks.includes(e[1]);
-// An event you picked that's filling up: [id, title, format, lo, hi, registered, max, waitlist]
-export function eventAlert(t, snap){
-  const picks = snap && Array.isArray(snap.picks) ? snap.picks : [];
-  const list = t && t.ev && Array.isArray(t.ev.list) ? t.ev.list : [];
-  if(!picks.length || !list.length) return null;
-  const mine = list.filter(e => picked(picks, e) && e[6] > 0);
-  const word = e => e[2] === 'Singles' ? 'players' : 'teams';
-  const full = mine.find(e => e[5] >= e[6] || e[7] > 0);
-  if(full) return { kind: 'events', key: (full[0] || full[1]) + ':full', title: evLabel(full) + ' is full', body: `${t.title}: ${full[5]} of ${full[6]} ${word(full)}${full[7] ? `, ${full[7]} on the waitlist` : ''}. You can still join the waitlist on their site.` };
-  const almost = mine.find(e => e[5] > 0 && e[6] - e[5] <= Math.max(2, Math.floor(e[6] * 0.2)));
-  if(almost){
-    const left = almost[6] - almost[5];
-    return { kind: 'events', key: (almost[0] || almost[1]) + ':almost', title: 'Almost full: ' + evLabel(almost), body: `${t.title}: only ${left} ${left === 1 ? 'spot' : 'spots'} left (${almost[5]} of ${almost[6]} ${word(almost)}).` };
-  }
-  return null;
-}
 
 // Pick at most one alert for one saved tournament
 export function alertFor({ t, snap, registered, det, prefs, now, today }){
@@ -85,10 +58,6 @@ export function alertFor({ t, snap, registered, det, prefs, now, today }){
       const d = new Date(close), et = etParts(d);
       return { kind: 'closing', key: String(det.regClose), title: 'Registration closes soon', body: `${title}: sign-up closes ${WD[new Date(et.ymd + 'T12:00:00Z').getUTCDay()]}, ${fmtDay(et.ymd)}.`, url };
     }
-  }
-  if(!registered && on('events')){
-    const ea = eventAlert(t, snap);
-    if(ea) return Object.assign(ea, { url });
   }
   if(on('early') && det && det.costs && det.costs.length){
     const cur = (() => { const m = /\$\s*([\d,.]+)/.exec(String(det.price || '')); return m ? parseFloat(m[1].replace(/,/g, '')) : t.price; })();

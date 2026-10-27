@@ -5,8 +5,8 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 ## Files
 - `index.html`: the whole app (HTML/CSS/JS, no build step). Glass design system with tokens at the top of the `<style>`; an inline head script (`BracketLooks`) sets light/dark, theme-color and the iPhone status bar style before first paint.
 - `manifest.webmanifest`, `apple-touch-icon.png`, `icons/`: home-screen app and the paddle icon
-- `api/tournaments.js`: upcoming Michigan tournaments (cached 30 min at Vercel's edge; add `?debug=1` to see how the fetch went). Each item's `ev.list` has every event in short form `[id, title, format, lo, hi, registered, max, waitlist]` for the card's "your event" line and the hourly event alerts.
-- `api/cron.js`: hourly notification check (called by Supabase pg_cron). Alert types: partner, tomorrow, closing, events (a picked event almost full / waitlist), early, changes.
+- `api/tournaments.js`: upcoming Michigan tournaments (cached 30 min at Vercel's edge; add `?debug=1` to see how the fetch went). Each item's `ev.list` has every event in short form `[id, title, format, lo, hi, registered, max, waitlist]` for per-event filtering and the optional "Best event on cards" line.
+- `api/cron.js`: hourly notification check (called by Supabase pg_cron). Alert types: partner, tomorrow, closing, early, changes.
 - `api/tournament.js`: one tournament's details + events (`?slug=midwest-open`)
 - `api/_lib/pt.js`: pickleballtournaments.com helpers (finds the site's search action by name, parses tournament pages). Copied from Rally's rally-4 engine, not shared with it.
 - `api/share.js`: `/t/<slug>` share links. Serves index.html with the tournament's name, dates and city in the link-preview tags (vercel.json rewrites `/t/:slug` here and bundles index.html with it).
@@ -21,7 +21,7 @@ Free, phone-first, **unofficial** finder for Michigan pickleball tournaments. Da
 
 ## On each phone (localStorage)
 - `bracket_settings`: home location, ratings (general + doubles/singles), saved partners (`partners`: name, rating, mixed or doubles), notification types, List or Calendar, filters (incl. weekend / dates, level fit / up), looks, text size, Mine tab
-- `bracket_saves`: `{ interested: {slug: snapshot}, registered: {slug: snapshot} }`. A snapshot may carry `alerts` (per-tournament alert choices) and `picks` (the event ids you picked as "Your events").
+- `bracket_saves`: `{ interested: {slug: snapshot}, registered: {slug: snapshot} }`. A snapshot may carry `alerts` (per-tournament alert choices). (`picks` from bracket-11 is no longer used.)
 - `bracket_list`: last tournament list (opens instantly, shown if the data source is down)
 - `bracket_details`: last 30 tournament details
 
