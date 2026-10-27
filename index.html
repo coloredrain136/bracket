@@ -226,6 +226,28 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .lv{ font-weight:700; color:var(--accent-text); }
 .lv.up{ color:var(--blue); }
 .lv.no{ color:var(--faint); font-weight:600; }
+.lv.pick{ color:var(--accent-text); }
+.lvline{ font-size:var(--t-sm); margin:0 0 4px; line-height:1.35; overflow-wrap:anywhere; }
+.ev .pick{ flex:none; width:34px; height:34px; border-radius:50%; border:2px solid var(--faint); background:transparent; display:grid; place-items:center; color:transparent; padding:0; margin-left:-2px; }
+.ev .pick svg{ width:18px; height:18px; }
+.ev .pick[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.ev .who{ color:var(--accent-text); font-weight:700; }
+.ev.up .who{ color:var(--blue); }
+.yours{ margin-bottom:6px; }
+.evother{ border-top:1px solid var(--line); margin-top:10px; }
+.evother > summary{ list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 2px; font-weight:800; font-size:var(--t-md); cursor:pointer; }
+.evother > summary::-webkit-details-marker{ display:none; }
+.evother > summary small{ color:var(--sub); font-weight:600; font-size:var(--t-xs); }
+.evother > summary svg{ width:16px; height:16px; color:var(--faint); transition:transform var(--fast); }
+.evother[open] > summary svg{ transform:rotate(90deg); }
+.cost ul{ margin:0; padding-left:18px; }
+.cost li{ margin:4px 0; font-size:var(--t-md); line-height:1.4; }
+.cost .est{ margin-top:10px; padding:11px 13px; border-radius:12px; background:var(--accent-soft); font-size:var(--t-md); line-height:1.4; }
+.cost .est b{ font-weight:800; }
+.pcard{ padding:14px; }
+.pcard + .pcard{ border-top:1px solid var(--line); }
+.pcard .prow2{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+.pcard .prow2 .seg{ flex:1; }
 .foot{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:var(--t-sm); color:var(--sub); }
 .foot b{ color:var(--text); font-weight:700; }
 .price{ margin-top:6px; font-size:var(--t-sm); font-weight:700; color:var(--text); }
@@ -609,6 +631,7 @@ input[type=range]:disabled{ opacity:.4; }
     <symbol id="i-loc" viewBox="0 0 24 24"><path d="M20.5 3.5L3.5 10.6l7.2 2.7 2.7 7.2z"/></symbol>
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.6 5.4 3.6 8.5s-1.1 5.9-3.6 8.5c-2.5-2.6-3.6-5.4-3.6-8.5S9.5 6.1 12 3.5z"/></symbol>
     <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.7 15.8a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
@@ -684,7 +707,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-10';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-11';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -727,9 +750,11 @@ S.filters = Object.assign({}, DEFAULT_FILTERS, S.filters || {});
 if(S.level != null && S.rating == null){ const r = parseFloat(S.level); if(r) S.rating = r; }
 delete S.level;
 // Optional ratings by event type (bracket-7). Empty = use the general rating.
-const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, early: true, changes: false };
+const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, events: true, early: true, changes: false };
 S.notify = Object.assign({}, NOTIFY_DEFAULTS, S.notify || {});
 S.ratings = { doubles: (S.ratings && S.ratings.doubles) ?? null, singles: (S.ratings && S.ratings.singles) ?? null };   // bracket-8: mixed uses doubles
+// Saved partners (bracket-11): { id, name, rating, kind: 'mixed' | 'doubles' }
+S.partners = Array.isArray(S.partners) ? S.partners.filter(p => p && typeof p === 'object').slice(0, 6).map(p => ({ id: String(p.id || Math.random().toString(36).slice(2, 8)), name: String(p.name || '').slice(0, 30), rating: p.rating != null && !isNaN(+p.rating) ? +p.rating : null, kind: p.kind === 'doubles' ? 'doubles' : 'mixed' })) : [];
 if(S.filters.level && S.filters.level !== 'fit' && S.filters.level !== 'up') S.filters.level = 'fit';
 if(S.filters.when === '30' || S.filters.when === '90' || S.filters.when === 'any' || S.filters.when === 'wk' || S.filters.when === 'range'){} else S.filters.when = 'any';
 let SAVES = Object.assign({ interested: {}, registered: {} }, load(LS.saves, {}));
@@ -837,20 +862,77 @@ function ratingSummary(){
   RKINDS.forEach(k => { if(S.ratings[k[0]] != null) parts.push(k[1] + ' ' + rt(S.ratings[k[0]])); });
   return parts.join(' · ');
 }
+/* Partners (bracket-11): in mixed / doubles events, a saved partner of that kind makes it a team.
+   A team's level = the higher of the two ratings (how most skill brackets place teams).
+   With a partner saved for that kind, the team's rating is used instead of yours alone. */
+const pKindOf = fmt => fmt === 'Mixed' ? 'mixed' : fmt === 'Doubles' ? 'doubles' : null;
+const partnersFor = fmt => { const k = pKindOf(fmt); return k ? S.partners.filter(p => p.kind === k && p.rating != null) : []; };
+const pName = p => (p.name || '').trim() || 'your partner';
+function fmtOf(e){
+  if(/team/i.test((e.group || '') + ' ' + (e.title || ''))) return 'Team';
+  if(/mixed/i.test(e.players || '') || /^mixed/i.test(e.title || '')) return 'Mixed';
+  if(/singles/i.test(e.format || '') || /singles/i.test(e.title || '')) return 'Singles';
+  return 'Doubles';
+}
+// The ratings that apply to an event format: [{ R, who }]
+function eventRatings(fmt){
+  const my = ratingFor(fmtKind(fmt));
+  if(my == null) return [];
+  const ps = partnersFor(fmt);
+  if(!ps.length) return [{ R: my, who: null }];
+  return ps.map(p => ({ R: Math.max(my, p.rating), who: pName(p) }));
+}
+function evLevel(fmt, lo, hi){
+  const rs = eventRatings(fmt), out = { mine: false, up: false, who: null };
+  if(lo == null || hi == null) return out;
+  const m = rs.find(x => covers(lo, hi, x.R));
+  if(m){ out.mine = true; out.who = m.who; return out; }
+  const u = rs.find(x => isUp(lo, hi, x.R));
+  if(u){ out.up = true; out.who = u.who; }
+  return out;
+}
 // Level ranges in a tournament, each paired with the rating that applies to it: [lo, hi, R]
 function tourRanges(t){
   if(!t.ev) return [];
   if(t.ev.byFormat){
     const out = [];
     Object.entries(t.ev.byFormat).forEach(([f, list]) => {
-      const R = ratingFor(fmtKind(f));
-      if(R == null) return;
-      list.forEach(r => { if(!isOpenRange(r[0], r[1])) out.push([r[0], r[1], R]); });
+      eventRatings(f).forEach(({ R }) => {
+        list.forEach(r => { if(!isOpenRange(r[0], r[1])) out.push([r[0], r[1], R]); });
+      });
     });
     return out;
   }
   const Rs = [...new Set([S.rating, ...RKINDS.map(k => S.ratings[k[0]])].filter(v => v != null))];
   return (t.ev.skills || []).filter(r => !isOpenRange(r[0], r[1])).flatMap(r => Rs.map(R => [r[0], r[1], R]));
+}
+/* Picked events (bracket-11): saved with the tournament as snap.picks = [event id (or title)] */
+const evKey = e => (e.id ? String(e.id) : '') || String(e.title || '');
+const pickHit = (picks, id, title) => (!!id && picks.includes(String(id))) || (!!title && picks.includes(String(title)));
+function picksOf(slug){ const s = SAVES.registered[slug] || SAVES.interested[slug]; return s && Array.isArray(s.picks) ? s.picks : []; }
+const shortEv = title => String(title || '').split(':')[0].trim();
+// One event from the list's short form [id, title, format, lo, hi, registered, max, waitlist] → "Mixed Doubles 3.5–3.99 · 5 of 16 teams"
+function evLine(x){
+  const word = x[2] === 'Singles' ? 'players' : 'teams';
+  const lvl = x[3] != null ? ' ' + rangeText(x[3], x[4]) : '';
+  const cnt = x[6] ? `${x[5]} of ${x[6]} ${word}` : `${x[5]} ${word}`;
+  return `${shortEv(x[1]) || x[2]}${lvl} · ${cnt}${x[6] && (x[5] >= x[6] || x[7] > 0) ? ' · Full' : ''}`;
+}
+function cardLevel(t){
+  const list = t.ev && Array.isArray(t.ev.list) ? t.ev.list : null;
+  const picks = picksOf(t.slug);
+  if(list && picks.length){
+    const mine = list.filter(x => pickHit(picks, x[0], x[1]));
+    if(mine.length) return { k: 'pick', txt: '★ ' + evLine(mine[0]) + (mine.length > 1 ? ` · +${mine.length - 1} more` : '') };
+  }
+  if(!list) return levelInfo(t);
+  if(!hasRating()) return null;
+  const tagged = list.filter(x => x[3] != null && !isOpenRange(x[3], x[4])).map(x => ({ x, l: evLevel(x[2], x[3], x[4]) }));
+  if(!tagged.length) return null;
+  const fits = tagged.filter(o => o.l.mine).sort((a, b) => b.x[5] - a.x[5] || a.x[3] - b.x[3]);
+  if(fits.length) return { k: 'fit', txt: '✓ ' + evLine(fits[0].x) + (fits.length > 1 ? ` · +${fits.length - 1} more` : '') };
+  if(tagged.some(o => o.l.up)) return { k: 'up', txt: '↑ Play-up events only' };
+  return { k: 'no', txt: 'No events at your level' };
 }
 function levelInfo(t){
   if(!hasRating() || !t.ev) return null;
@@ -923,7 +1005,9 @@ const meter = (q, big) => `<span class="meter${big ? ' big' : ''}" data-q="${q}"
 function priceText(t){
   if(t.free) return 'Free';
   if(t.price == null || isNaN(t.price)) return '';
-  return '$' + Math.round(t.price) + (t.costPerEvent ? ' per event' : '');
+  // "Cost per event" on their site means event fees are charged on top of this price (checked Oct 26, 2026)
+  if(t.costPerEvent) return t.price > 0 ? '$' + Math.round(t.price) + ' + event fees' : 'Priced per event';
+  return '$' + Math.round(t.price);
 }
 function playersText(t){
   if(t.playersHidden) return 'Players hidden';
@@ -958,7 +1042,7 @@ function snap(t){
   };
 }
 // Keep a tournament's own alert choices when it's saved the other way too (Interested ↔ Registered)
-function withAlerts(s, other){ if(other && other.alerts != null) s.alerts = other.alerts; return s; }
+function withAlerts(s, other){ if(other && other.alerts != null) s.alerts = other.alerts; if(other && Array.isArray(other.picks) && other.picks.length) s.picks = other.picks.slice(); return s; }
 function findT(slug){
   const live = LIST && LIST.items ? LIST.items.find(x => x.slug === slug) : null;
   if(live) return live;
@@ -1115,7 +1199,7 @@ function card(t){
   const d = distOf(t);
   const q = quality(t);
   const saved = !!SAVES.interested[t.slug];
-  const lv = levelInfo(t);
+  const lv = cardLevel(t);
   const fm = t.ev && t.ev.formats && t.ev.formats.length ? t.ev.formats.join(' · ') + (t.ev.n ? ` · ${pl(t.ev.n, 'event')}` : '') : '';
   const price = priceText(t);
   const ch = savedSnap(t.slug) ? changesFor(t.slug) : [];
@@ -1126,7 +1210,7 @@ function card(t){
       <div class="kick">${esc(t.city || '')}${d != null ? `<span class="dot"></span>${distText(d)}` : ''}</div>
       <h3>${esc(t.title)}</h3>
       <div class="tags"><span class="tag ${st.k}">${esc(st.txt)}</span>${t.prize ? '<span class="tag prize">$ Prize money</span>' : ''}</div>
-      ${fm || lv ? `<div class="fmt">${lv ? `<span class="lv ${lv.k}">${esc(lv.txt)}</span>${fm ? ' · ' : ''}` : ''}${esc(fm)}</div>` : ''}
+      ${lv ? `<div class="lvline lv ${lv.k}">${esc(lv.txt)}</div>` : ''}${fm ? `<div class="fmt">${esc(fm)}</div>` : ''}
       <div class="foot">${meter(q.q)}<span>${playersText(t)}</span></div>${price ? `<div class="price">${esc(price)}</div>` : ''}${partner.counts[t.slug] ? `<div class="pcount">${icon('people')}${partner.counts[t.slug]} looking for a partner</div>` : ''}
     </div>
     <button class="star" data-act="star" data-slug="${esc(t.slug)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from Interested' : 'Interested'}">${icon('star')}</button>
@@ -1347,8 +1431,9 @@ function renderSettings(){
     <div class="group">
       ${row('sp-home', 'pin', 'green', 'Home', S.home ? (S.home.src === 'gps' ? (S.home.near ? 'Near ' + S.home.near : 'My location') : S.home.name) : 'Not set')}
       ${row('sp-rating', 'target', 'blue', 'Your rating', S.rating != null ? rt(S.rating) + (specificCount() ? ` +${specificCount()}` : '') : specificCount() ? ratingSummary() : 'Not set')}
+      ${row('sp-partners', 'people', 'teal', 'Partners', S.partners.length ? String(S.partners.length) : 'None', 'Find your team’s level in mixed and doubles')}
     </div>
-    <p class="gfoot">Home is used for distances. Your rating finds events at your level. ${acct.user ? 'Both sync to your account.' : 'Both stay on this phone.'}</p>
+    <p class="gfoot">Home is used for distances. Your rating and partners find events at your level. ${acct.user ? 'They sync to your account.' : 'They stay on this phone.'}</p>
     <div class="group-l">Notifications</div>
     <div class="group">${row('sp-notify', 'bell', 'orange', 'Notifications', pushState.on ? 'On' : 'Off', 'Reminders about tournaments you saved')}</div>
     <div class="group-l">Display</div>
@@ -1367,6 +1452,11 @@ function renderSettings(){
     <div class="group-l">Your data</div>
     <div class="group">${row('sp-data', 'box', 'red', 'Saved on this phone', `${b.interested.length + b.registered.length + b.history.length}`)}</div>
     <p class="version">Version ${VERSION}</p>`;
+}
+function partnerRatingSelect(pr){
+  let o = '<option value="">Their rating</option>';
+  for(let v = 2; v <= 6.001; v += 0.05) o += `<option value="${v.toFixed(2)}" ${pr.rating != null && Math.abs(pr.rating - v) < 0.001 ? 'selected' : ''}>${v.toFixed(2)}</option>`;
+  return `<div class="selwrap small" style="width:100%"><select data-prating="${esc(pr.id)}" aria-label="Partner rating">${o}</select>${icon('chev')}</div>`;
 }
 function pageHead(title){
   return `<div class="spage-head"><button class="back" data-act="sp-back">${icon('chev')}Settings</button></div><h1 class="big-title">${esc(title)}</h1>`;
@@ -1389,6 +1479,28 @@ function settingsPage(p){
       <div class="gitem noicon"><span class="t">Level filter<small>In Filters, “My level” shows tournaments with events at your level. “+ Play up” also includes one step up.</small></span></div>
     </div>
     <p class="gfoot">Bracket can't see your DUPR account. It only compares your rating with each event's level range.</p></div>`;
+  if(p === 'partners'){
+    const my = k => ratingFor(k);
+    const ex = (() => {
+      const pp = S.partners.find(x => x.rating != null);
+      const me = pp ? my('doubles') : null;
+      if(!pp || me == null) return 'Example: you 3.40 + partner 3.80 → your team plays 3.5–4.0 events.';
+      const team = Math.max(me, pp.rating);
+      return `You ${rt(me)} + ${esc(pName(pp))} ${rt(pp.rating)} → your team plays ${myRanges(team).mine} events.`;
+    })();
+    return `<div class="spage">${pageHead('Partners')}
+      <p class="big-sub">Save the people you play mixed or doubles with. Bracket uses the <b>higher</b> of your two ratings to find your team's level. That's how most tournaments place teams.</p>
+      ${!hasRating() ? `<div class="banner" style="margin-top:0">${icon('target')}<div><b>Set your own rating first.</b><button data-act="sp-rating">Your rating</button></div></div>` : ''}
+      ${S.partners.length ? `<div class="group">${S.partners.map(pr => `<div class="pcard" data-pid="${esc(pr.id)}">
+        <label class="field" style="margin:0"><span>Name</span><input type="text" data-pname="${esc(pr.id)}" maxlength="30" placeholder="Like Sam" value="${esc(pr.name)}" autocomplete="off"></label>
+        <div class="prow2">${segHTML('pkind:' + pr.id, [['mixed', 'Mixed'], ['doubles', 'Doubles']], pr.kind)}</div>
+        <div class="prow2"><div style="flex:1">${partnerRatingSelect(pr)}</div><button class="btn sm ghost" data-act="p-remove" data-pid="${esc(pr.id)}">Remove</button></div>
+      </div>`).join('')}</div>` : ''}
+      ${S.partners.length < 6 ? `<button class="btn ghost wide" data-act="p-add" style="margin-top:${S.partners.length ? 12 : 0}px">${icon('plus')}Add a partner</button>` : ''}
+      <p class="gfoot">${ex}</p>
+      <div class="group-l">How it works</div>
+      <div class="group"><div class="gitem col"><p><b>Mixed</b> partners count for mixed doubles. <b>Doubles</b> partners count for men's and women's doubles. Singles always uses just your rating.</p><p style="margin-top:8px">With a partner saved, Bracket highlights your team's level instead of yours alone, and says “With Sam” on those events.</p><p style="margin-top:8px">Some tournaments use the team's <b>average</b> rating instead. If you're close to a line, check the tournament's rules.</p></div></div></div>`;
+  }
   if(p === 'notify'){
     if(!pushState.checked) checkPush().then(() => { if(ui.spage === 'notify') renderSettings(); });
     let status;
@@ -1424,7 +1536,7 @@ function settingsPage(p){
       <button class="gitem noicon danger" data-act="reset-app"><span class="t">Start over<small>Clears your home, rating, filters and saves</small></span></button>
     </div></div>`;
   if(p === 'account'){
-    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings and home city<br>• If you turn on notifications: a code for each device so Bracket can send alerts there<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
+    const stored = `<div class="group-l">What Bracket saves</div><div class="group"><div class="gitem col"><p>• Your name and email from Google, so you can sign in<br>• Your saved tournaments (Interested and Registered)<br>• Your ratings, your saved partners' names and ratings, and your home city<br>• If you turn on notifications: a code for each device so Bracket can send alerts there<br>• If you use Find a partner: your posts (public: first name, last initial, rating, event, note) and requests (your contact goes only to the player you ask)</p><p style="margin-top:10px">That's all. It isn't sold or shared, there are no ads, and you can delete it any time. Saves are locked to your account, so nobody else can see them.</p></div></div>`;
     if(!acct.user) return `<div class="spage">${pageHead('Account')}<p class="big-sub">An account is optional. It keeps your saved tournaments on all your devices.</p>
       ${ui.config && ui.config.supabase ? `<button class="gbtn" data-act="signin">${GOOGLE_G}Sign in with Google</button>` : `<div class="group"><div class="gitem col"><p>Sign-in isn't turned on yet.</p></div></div>`}${stored}</div>`;
     return `<div class="spage">${pageHead('Account')}
@@ -1474,7 +1586,13 @@ function settingsPage(p){
       <p style="margin-top:8px">“Closes” and “Opens” show once Bracket has loaded that tournament's details (open it once, or save it).</p></div>
     <div class="group-l">Levels and your rating</div>
     <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Bracket always shows levels as a range. A “3.5” event means 3.5–3.99. Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
-      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p></div>
+      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p><p>Cards name the event that fits you best, like “Mixed Doubles 3.5–3.99 · 5 of 16 teams”, so you can see how full it is.</p></div>
+    <div class="group-l">Partners</div>
+    <div class="group"><p>Play mixed or doubles with someone rated higher or lower? Add them in <b>Settings → Partners</b> with their rating. Bracket uses the higher of your two ratings to find your team's level (that's how most tournaments place teams) and marks those events “With Sam”.</p><p>Example: you 3.40 + partner 3.80 → your team plays 3.5–4.0 events (including 3.5–3.99).</p></div>
+    <div class="group-l">Your events</div>
+    <div class="group"><p>Only interested in a few events at a tournament? Open it and tap the ○ next to each one you'd play. They move to the top under <b>Your events</b>, the rest fold into <b>Other events</b>, and the card shows your event. Picking an event also saves the tournament to Interested.</p><p>With notifications on, Bracket can tell you when one of your events is almost full or gets a waitlist.</p></div>
+    <div class="group-l">Prices</div>
+    <div class="group"><p>The price is the registration fee. Many tournaments charge for each event on top of that, so cards say “$50 + event fees”. When the organizer lists their fees, Bracket shows them under <b>Cost</b>, and adds up the events you picked. Their site also adds small service fees at checkout.</p></div>
     <div class="group-l">Quality meter</div>
     <div class="group"><div class="demo">${meter(1)} ${meter(3)} ${meter(5)}</div><p>A quick read on how big a tournament is, mostly from how many players have signed up: 15+ is Small, 50+ Fair, 100+ Good, 180+ Great, 300+ Best. Lots of events (20+) adds a bar. Prize money is shown, but doesn't count toward the score.</p><p>A small tournament isn't a bad one. It just means fewer teams in each event.</p></div>
 
@@ -1483,7 +1601,7 @@ function settingsPage(p){
     <div class="group-l">Find a partner</div>
     <div class="group"><ul><li>Open a tournament and tap <b>Need a partner?</b> (under the events list). Anyone can see who's looking.</li><li>Sign in with Google, then tap <b>I'm looking for a partner</b>, pick the event, and add a short note.</li><li>See someone who fits? Tap <b>Ask to team up</b> and add your phone or email. Only that player sees it.</li><li>Requests show up in <b>Mine</b> with an orange number on the tab. Tap Text, Call or Email to reach them, then mark <b>Found a partner</b>.</li><li>Posts show only your first name, last initial, rating and note. See something wrong? Tap <b>Report</b>.</li></ul></div>
     <div class="group-l">Notifications</div>
-    <div class="group"><ul><li>Turn them on in <b>Settings → Notifications</b>. You need to be signed in, and on iPhone Bracket has to be on your Home Screen.</li><li>Pick what you want: partner requests, the day before a tournament you registered for, registration closing, early-bird price ending, or changes.</li><li>Want something different for one tournament? Open it and tap <b>Alerts</b>.</li><li>Bracket sends at most one alert per tournament a day, and only between 9am and 8pm.</li></ul></div>
+    <div class="group"><ul><li>Turn them on in <b>Settings → Notifications</b>. You need to be signed in, and on iPhone Bracket has to be on your Home Screen.</li><li>Pick what you want: partner requests, the day before a tournament you registered for, registration closing, your events filling up, early-bird price ending, or changes.</li><li>Want something different for one tournament? Open it and tap <b>Alerts</b>.</li><li>Bracket sends at most one alert per tournament a day, and only between 9am and 8pm.</li></ul></div>
     <div class="group-l">Saving tournaments</div>
     <div class="group"><ul><li><b>☆ Interested</b>: tournaments you're thinking about.</li><li><b>I registered</b>: tap this after you sign up on pickleballtournaments.com, so you remember. Bracket can't see your real registrations.</li><li><b>History</b>: your saved tournaments after they're over.</li><li><b>Updates</b>: if the price, dates or registration of a saved tournament changes, an orange dot shows on it and a number appears on the Mine tab. Open the tournament to see what changed.</li></ul><p>Saves stay on this phone. Sign in with Google (Settings → Account) and they follow you to all your devices.</p></div>
     <div class="group-l">Tips</div>
@@ -1532,6 +1650,25 @@ function mapsUrl(q, lat, lng){
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
 }
 
+/* Fees the organizer wrote in the description, like "Registration: $50 + $15 per event".
+   Their site's own price is the registration; when it says "cost per event", event fees come on top. */
+function feeLines(desc){
+  const out = [];
+  String(desc || '').split(/\n|[.!]\s+(?=[A-Z])/).forEach(raw => {
+    const l = raw.replace(/^[\s•*\-–]+/, '').trim();
+    if(!/\$\s?\d/.test(l) || l.length > 160) return;
+    if(!/(fee|per event|per division|per bracket|per player|per person|registration|entry|cost|each event|additional event)/i.test(l)) return;
+    if(/(prize|payout|pay out|cash|purse|place|1st|2nd|3rd|winner|refund|credit|non-?refundable|stripe|service fee|processing|sponsor|guarantee)/i.test(l)) return;
+    if(!out.includes(l)) out.push(l);
+  });
+  return out.slice(0, 4);
+}
+// One clear "$X per event" amount, or null if there's none or more than one
+function perEventFee(lines){
+  const found = new Set();
+  lines.forEach(l => { const re = /\$\s?(\d+(?:\.\d{1,2})?)\s*(?:\/|per|each|a|for each)\s*(?:additional\s+)?(?:event|division|bracket)\b/gi; let m; while((m = re.exec(l))) found.add(+m[1]); });
+  return found.size === 1 ? [...found][0] : null;
+}
 function detailBody(t){
   const slug = t.slug;
   const data = detailOf(slug);
@@ -1571,8 +1708,9 @@ function detailBody(t){
 
   // ---- Facts
   const curPrice = moneyNum(det.price) != null ? moneyNum(det.price) : tt.price;
-  const priceV = tt.free ? 'Free' : curPrice != null ? '$' + Math.round(curPrice) : '—';
-  const priceS = tt.costPerEvent ? 'per event' : (tt.free ? '' : 'to enter');
+  const perEventOnly = tt.costPerEvent && !tt.free && !(curPrice > 0);
+  const priceV = tt.free ? 'Free' : perEventOnly ? 'Per event' : curPrice != null ? '$' + Math.round(curPrice) : '—';
+  const priceS = tt.free ? '' : perEventOnly ? 'see event fees below' : tt.costPerEvent ? 'to register, plus event fees' : 'to enter';
   let up = '';
   if(det.costs && det.costs.length && curPrice != null){
     const now = Date.now();
@@ -1589,7 +1727,7 @@ function detailBody(t){
   })();
   const players = det.players != null ? det.players : tt.players;
   const tiles = [];
-  tiles.push(`<div class="fact"><div class="l">Price</div><div class="v">${esc(priceV)}</div>${up ? `<div class="s up">${esc(up)}</div>` : priceS ? `<div class="s">${priceS}</div>` : ''}</div>`);
+  tiles.push(`<div class="fact"><div class="l">Price</div><div class="v">${esc(priceV)}</div>${priceS ? `<div class="s">${priceS}</div>` : ''}${up ? `<div class="s up">${esc(up)}</div>` : ''}</div>`);
   tiles.push(`<div class="fact"><div class="l">Players</div><div class="v">${tt.playersHidden || (data && data.playerCountHidden) ? 'Hidden' : esc(players || 0)}</div><div class="s">signed up so far</div></div>`);
   if(regV) tiles.push(`<div class="fact"><div class="l">Registration</div><div class="v sm">${esc(regV[0])}</div>${regV[1] ? `<div class="s">${esc(regV[1])}</div>` : ''}</div>`);
   if(det.courts) tiles.push(`<div class="fact"><div class="l">Courts</div><div class="v">${esc(det.courts)}</div><div class="s">${esc([det.playArea, det.surface].filter(Boolean).join(' · ') || 'courts')}</div></div>`);
@@ -1600,6 +1738,18 @@ function detailBody(t){
 
   if(err && !data){
     h += `<div class="d-error">Couldn't load the full details right now. <button class="linkbtn" data-act="retry-detail" data-slug="${esc(slug)}">Try again</button></div>`;
+  }
+
+  // ---- Cost: what the organizer wrote about fees, plus an estimate for the events you picked
+  const desc = cleanText(det.description);
+  const fees = feeLines(desc);
+  if(fees.length || (tt.costPerEvent && !tt.free && data)){
+    const pe = perEventFee(fees);
+    const n = picksOf(slug).length;
+    let est = '';
+    if(pe != null && tt.costPerEvent && curPrice != null && n) est = `<div class="est">Your ${pl(n, 'event')}: about <b>$${Math.round(curPrice + pe * n)}</b> ($${Math.round(curPrice)} + ${n} × $${Math.round(pe)}), plus their site's service fees.</div>`;
+    else if(pe != null && tt.costPerEvent && curPrice != null) est = `<p class="fine" style="margin-top:8px">Tap ○ on the events you'd play and Bracket adds up the cost.</p>`;
+    h += `<div class="blk cost"><h3>Cost${fees.length ? '<small>from the organizer</small>' : ''}</h3>${fees.length ? `<ul>${fees.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="desc" style="margin:0">Each event costs extra on top of the $${Math.round(curPrice || 0)} registration. The organizer didn't list event prices here, so check on their site.</p>`}${est}</div>`;
   }
 
   // ---- Quality
@@ -1616,43 +1766,62 @@ function detailBody(t){
     h += '<div class="skel sm" style="margin:16px 0"></div>';
   }
 
-  // ---- Events, grouped by level
+  // ---- Events: the ones you picked on top, the rest grouped by level
   if(events.length){
+    const picks = picksOf(slug);
     const tagged = events.map(e => {
       const r = skillRange(e.skill);
-      const Re = R != null ? ratingFor(evKind(e)) : null;
-      const mine = Re != null && r && !r.open && covers(r.lo, r.hi, Re);
-      const upE = Re != null && r && !r.open && isUp(r.lo, r.hi, Re);
-      return Object.assign({ r, mine, upE }, e);
+      const l = R != null && r && !r.open ? evLevel(fmtOf(e), r.lo, r.hi) : { mine: false, up: false, who: null };
+      return Object.assign({ r, mine: l.mine, upE: l.up, who: l.who, key: evKey(e), picked: pickHit(picks, e.id, e.title) }, e);
     });
+    const yours = tagged.filter(e => e.picked), rest = tagged.filter(e => !e.picked);
     const mineCount = tagged.filter(e => e.mine).length, upCount = tagged.filter(e => e.upE).length;
-    const showMine = R != null && ui.evMine && (mineCount + upCount) > 0;
-    const groups = new Map();
-    tagged.forEach(e => {
-      if(showMine && !e.mine && !e.upE) return;
-      const key = evSkill(e.skill) || 'Other';
-      if(!groups.has(key)) groups.set(key, { lo: e.r ? (e.r.open ? 99 : e.r.lo) : 100, hi: e.r ? e.r.hi : 100, mine: false, up: false, list: [] });
-      const g = groups.get(key);
-      if(e.mine) g.mine = true;
-      if(e.upE) g.up = true;
-      g.list.push(e);
-    });
-    const toggle = R != null && (mineCount + upCount) ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
-    h += `<div class="blk"><h3><span>Events <small>${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}</small></span>${toggle}</h3>`;
-    [...groups.entries()].sort((a, b) => a[1].lo - b[1].lo || a[1].hi - b[1].hi).forEach(([k, g]) => {
-      const title = k === 'Open' || k === 'Other' ? k + ' level' : 'Level ' + k;
-      h += `<details class="evgroup" open><summary><span>${esc(title)}${g.mine ? '<span class="yl">Your level</span>' : g.up ? '<span class="yl up">Play up</span>' : ''} <small>${g.list.length}</small></span>${icon('chev')}</summary>`;
-      g.list.forEach(e => {
-        const word = /singles/i.test(e.format) ? 'players' : 'teams';
-        const meta = [e.age && !/^\(?any\)?$/i.test(e.age) ? 'Age ' + e.age.replace(/[()]/g, '') : '', evWhen(e), e.bracket].filter(Boolean).join(' · ');
-        const pct = e.max ? Math.min(100, Math.round(e.registered / e.max * 100)) : 0;
-        h += `<div class="ev${e.mine ? ' mine' : e.upE ? ' up' : ''}"><div class="n"><b>${esc(evName(e))}</b><span>${esc(meta)}</span></div>
-          <div class="c"><b>${e.max ? `${e.registered}/${e.max}` : e.registered}</b>${word}${e.max ? `<div class="bar2"><i class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></i></div>` : ''}${e.waitlist ? `<div class="wl">${e.waitlist} waitlist</div>` : ''}</div></div>`;
+    const restMU = rest.filter(e => e.mine || e.upE).length;
+    const showMine = R != null && ui.evMine && restMU > 0;
+    const evRow = e => {
+      const word = /singles/i.test(e.format) ? 'players' : 'teams';
+      const meta = [e.age && !/^\(?any\)?$/i.test(e.age) ? 'Age ' + e.age.replace(/[()]/g, '') : '', evWhen(e), e.bracket].filter(Boolean).join(' · ');
+      const pct = e.max ? Math.min(100, Math.round(e.registered / e.max * 100)) : 0;
+      const who = e.who && (e.mine || e.upE) ? `<span class="who">With ${esc(e.who)}${e.upE ? ' (play up)' : ''}</span>` : '';
+      const lvl = e.picked && e.r ? `<span style="white-space:nowrap"> ${esc(evSkill(e.skill))}</span>` : '';
+      return `<div class="ev${e.mine ? ' mine' : e.upE ? ' up' : ''}"><button class="pick" data-act="pick" data-slug="${esc(slug)}" data-k="${esc(e.key)}" aria-pressed="${e.picked}" aria-label="${e.picked ? 'Remove from your events' : 'Add to your events'}: ${esc(evName(e))}">${icon('check')}</button><div class="n"><b>${esc(evName(e))}${lvl}</b>${who}<span>${esc(meta)}</span></div>
+        <div class="c"><b>${e.max ? `${e.registered}/${e.max}` : e.registered}</b>${word}${e.max ? `<div class="bar2"><i class="${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></i></div>` : ''}${e.waitlist ? `<div class="wl">${e.waitlist} waitlist</div>` : ''}</div></div>`;
+    };
+    const grouped = list => {
+      const groups = new Map();
+      list.forEach(e => {
+        if(showMine && !e.mine && !e.upE) return;
+        const key = evSkill(e.skill) || 'Other';
+        if(!groups.has(key)) groups.set(key, { lo: e.r ? (e.r.open ? 99 : e.r.lo) : 100, hi: e.r ? e.r.hi : 100, mine: false, up: false, list: [] });
+        const g = groups.get(key);
+        if(e.mine) g.mine = true;
+        if(e.upE) g.up = true;
+        g.list.push(e);
       });
-      h += '</details>';
-    });
-    if(showMine) h += `<p class="fine">Showing ${pl(mineCount + upCount, 'event')} at or one step above ${specificCount() ? 'your levels' : rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${events.length}</button></p>`;
-    h += '</div>';
+      let out = '';
+      [...groups.entries()].sort((a, b) => a[1].lo - b[1].lo || a[1].hi - b[1].hi).forEach(([k, g]) => {
+        const title = k === 'Open' || k === 'Other' ? k + ' level' : 'Level ' + k;
+        out += `<details class="evgroup" open><summary><span>${esc(title)}${g.mine ? '<span class="yl">Your level</span>' : g.up ? '<span class="yl up">Play up</span>' : ''} <small>${g.list.length}</small></span>${icon('chev')}</summary>`;
+        g.list.forEach(e => { out += evRow(e); });
+        out += '</details>';
+      });
+      return out;
+    };
+    const toggle = R != null && restMU ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
+    const showAll = showMine ? `<p class="fine">Showing ${pl(restMU, 'event')} at or one step above ${S.partners.length ? 'your (and your team’s) levels' : specificCount() ? 'your levels' : rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${rest.length}</button></p>` : '';
+    const counts = `${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}`;
+    if(yours.length){
+      h += `<div class="blk"><h3><span>Your events <small>${yours.length}</small></span></h3><div class="yours">${yours.map(evRow).join('')}</div>
+        <p class="fine">These stay on top, show on the card, and can send you an alert when they fill up. Tap ✓ again to remove one.</p>`;
+      if(rest.length) h += `<details class="evother"${ui.restOpen ? ' open' : ''} data-restopen><summary><span>Other events <small>${rest.length}</small></span>${icon('chev')}</summary>
+        ${toggle ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px">${toggle}</div>` : ''}${grouped(rest)}${showAll}</details>`;
+      h += '</div>';
+    } else {
+      h += `<div class="blk"><h3><span>Events <small>${counts}</small></span>${toggle}</h3>
+        <p class="fine" style="margin:-2px 2px 10px">Only into a few? Tap ○ on the events you'd play. They'll stay at the top.</p>${grouped(rest)}${showAll}`;
+      h += '</div>';
+    }
+    if(R != null && !S.partners.length && tagged.some(e => pKindOf(fmtOf(e)))) h += `<p class="fine">Playing with a partner? <button class="linkbtn" data-act="go-partners">Add their rating</button> and Bracket finds your team's level.</p>`;
   } else if(loading){
     h += '<div class="skel" style="margin:16px 0"></div>';
   } else if(data && !events.length){
@@ -1666,7 +1835,6 @@ function detailBody(t){
   }
 
   // ---- About
-  const desc = cleanText(det.description);
   if(desc || det.prizeInfo){
     h += `<div class="blk"><h3>About</h3>${det.prizeInfo ? `<p class="desc" style="margin:0 0 8px"><b>Prize:</b> ${esc(cleanText(det.prizeInfo))}</p>` : ''}${desc ? `<div class="desc${ui.descOpen || desc.length < 420 ? '' : ' clamp'}">${esc(desc)}</div>${!ui.descOpen && desc.length >= 420 ? '<button class="linkbtn" data-act="more" style="margin-top:6px">Show more</button>' : ''}` : ''}</div>`;
   }
@@ -1687,7 +1855,7 @@ function detailFoot(t){
 
 let detailSheet = null;
 function openTournament(slug){
-  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true;
+  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true; ui.restOpen = false;
   loadPartnerPosts(slug);
   ui.openChanges = changesFor(slug);
   if(ui.openChanges.length){ markSeen(slug); renderBadge(); if(ui.tab === 'mine') renderMine(true); else if(ui.tab === 'browse') renderList(); }
@@ -1804,6 +1972,7 @@ const NOTIFY_TYPES = [
   ['partner', 'Partner requests', 'When someone asks to team up with you'],
   ['tomorrow', 'Tournament tomorrow', 'The day before a tournament you marked registered'],
   ['closing', 'Registration closing', '2 days before sign-up closes, if you haven’t registered yet'],
+  ['events', 'Your events filling up', 'When an event you picked is almost full or has a waitlist'],
   ['early', 'Early-bird price ending', 'The day before the price goes up'],
   ['changes', 'Changes', 'Price, dates or registration changed (off to start)']
 ];
@@ -1884,7 +2053,7 @@ function alertsBody(slug){
   const reg = !!SAVES.registered[slug];
   if(!saved) return `<p class="hint" style="margin:0 2px 14px;font-size:var(--t-md)">Alerts work for tournaments you save. Tap ☆ to save this one, then choose what you want to hear about.</p><button class="btn primary wide" data-act="alerts-save" data-slug="${esc(slug)}">${icon('star')}Save this tournament</button>`;
   const a = savedAlerts(slug);
-  const types = NOTIFY_TYPES.filter(([k]) => k !== 'partner' && !(k === 'tomorrow' && !reg) && !(k === 'closing' && reg));
+  const types = NOTIFY_TYPES.filter(([k]) => k !== 'partner' && !(k === 'tomorrow' && !reg) && !((k === 'closing' || k === 'events') && reg));
   let h = '';
   if(!pushState.on) h += `<div class="banner" style="margin-top:0">${icon('bell')}<div><b>Notifications are off on this device.</b><button data-act="go-notify">Turn them on</button></div></div>`;
   h += `<div class="group" style="margin-top:12px"><div class="gitem noicon"><span class="t">Alerts for this tournament</span>${swHTML('alert-all', a !== 'off', 'Alerts for this tournament')}</div></div>`;
@@ -2035,7 +2204,9 @@ async function pullSync(){
         if(S.rating == null && p.rating != null) S.rating = +p.rating;
         if(!S.home && p.home) S.home = p.home;
         if(pr) RKINDS.forEach(k => { if(S.ratings[k[0]] == null && pr[k[0]] != null) S.ratings[k[0]] = +pr[k[0]]; });
+        if(!S.partners.length && Array.isArray(p.partners)) S.partners = p.partners.slice(0, 6);
       } else {
+        if(Array.isArray(p.partners)) S.partners = p.partners.slice(0, 6);
         S.rating = p.rating != null ? +p.rating : null; S.home = p.home || null; if(p.fit != null) S.fit = p.fit;
         if(pr) RKINDS.forEach(k => { S.ratings[k[0]] = pr[k[0]] != null ? +pr[k[0]] : null; });
         if(p.notify && typeof p.notify === 'object') S.notify = Object.assign({}, NOTIFY_DEFAULTS, p.notify);
@@ -2090,15 +2261,19 @@ function scheduleProfile(){
 }
 async function pushProfile(){
   if(!sb || !acct.user) return;
-  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false, ratings: S.ratings, notify: S.notify };
+  const body = { rating: S.rating != null ? S.rating : null, home: S.home || null, fit: S.fit !== false, ratings: S.ratings, notify: S.notify, partners: S.partners };
   const key = JSON.stringify(body);
   if(key === acct.profSent) return;
   try {
     const up = b => sb.from('bracket_profile').upsert(Object.assign({ user_id: acct.user.id, updated_at: new Date().toISOString() }, b), { onConflict: 'user_id' });
     let { error } = await up(body);
-    // A newer column whose SQL hasn't been run yet (ratings: 3-ratings.sql, notify: 4-notifications.sql): sync the rest
-    for(const col of ['notify', 'ratings']){
-      if(error && new RegExp(col, 'i').test(error.message || '')){ const b2 = Object.assign({}, body); delete b2.notify; if(col === 'ratings') delete b2.ratings; ({ error } = await up(b2)); }
+    // A newer column whose SQL hasn't been run yet (ratings: 3-ratings.sql, notify: 4-notifications.sql,
+    // partners: 6-my-partners.sql): leave it out and sync the rest
+    const b2 = Object.assign({}, body);
+    for(let i = 0; i < 3 && error; i++){
+      const col = ['partners', 'notify', 'ratings'].find(c => c in b2 && new RegExp(c, 'i').test(error.message || ''));
+      if(!col) break;
+      delete b2[col]; ({ error } = await up(b2));
     }
     if(error) throw error;
     acct.profSent = key;
@@ -2563,6 +2738,22 @@ function toggleRegistered(slug){
   }
   afterSaveChange();
 }
+function togglePick(slug, key){
+  if(!key) return;
+  if(!savedSnap(slug)){
+    const t = findT(slug);
+    if(t.placeholder || t.fromDetail) return;
+    SAVES.interested[slug] = snap(t);
+    toast('Saved to Interested with your event');
+  }
+  const cur = picksOf(slug), title = (() => { const d = detailOf(slug); const e = d && d.events ? d.events.find(x => evKey(x) === key) : null; return e ? e.title : null; })();
+  const has = cur.includes(key) || (title && cur.includes(title));
+  const next = has ? cur.filter(k => k !== key && k !== title) : cur.concat(key).slice(-30);
+  ['interested', 'registered'].forEach(k => { const sv = SAVES[k][slug]; if(sv){ if(next.length) sv.picks = next; else delete sv.picks; } });
+  ui.restOpen = true;   // keep the rest of the events open while picking a few
+  saveSaves();
+  afterSaveChange();
+}
 function afterSaveChange(){
   renderBadge();
   if(ui.tab === 'browse') renderList();
@@ -2663,6 +2854,11 @@ document.addEventListener('click', e => {
     case 'retry-detail': loadDetail(slug, true); break;
     case 'more': ui.descOpen = true; refreshOpenDetail(); break;
     case 'evmine': ui.evMine = !ui.evMine; refreshOpenDetail(); break;
+    case 'pick': togglePick(slug, el.dataset.k); break;
+    case 'go-partners': goSettingsPage('partners'); break;
+    case 'sp-partners': openSPage('partners'); break;
+    case 'p-add': S.partners.push({ id: Math.random().toString(36).slice(2, 8), name: '', rating: null, kind: 'mixed' }); saveSettings(); renderSettings(); { const ins = document.querySelectorAll('[data-pname]'); if(ins.length) ins[ins.length - 1].focus(); } break;
+    case 'p-remove': S.partners = S.partners.filter(x => x.id !== el.dataset.pid); saveSettings(); renderSettings(); toast('Partner removed'); break;
     case 'home': openHome(); break;
     case 'go-home': goSettingsPage('home'); break;
     case 'go-rating': goSettingsPage('rating'); break;
@@ -2758,6 +2954,7 @@ function onSeg(name, v){
   if(name === 'mine'){ S.mineTab = v; saveSettings(); renderMine(); }
   else if(name === 'view'){ S.view = v; saveSettings(); renderList(); }
   else if(name === 'startview'){ S.view = v; saveSettings(); }
+  else if(name.startsWith('pkind:')){ const pr = S.partners.find(x => x.id === name.slice(6)); if(pr){ pr.kind = v === 'doubles' ? 'doubles' : 'mixed'; saveSettings(); refreshOpenDetail(); } }
   else if(name === 'flevel'){ S.filters.level = v || null; filtersChanged(false); }
   else if(name === 'size'){ S.size = v; saveSettings(); window.BracketLooks(S.mode, v); }
   else if(name === 'mode'){
@@ -2772,6 +2969,11 @@ function onSeg(name, v){
 document.addEventListener('change', e => {
   const t = e.target;
   if(t.matches('[data-rating]') && (t.id === 'pRating' || t.id === 'aRating')) return;
+  if(t.matches('[data-prating]')){
+    const pr = S.partners.find(x => x.id === t.dataset.prating);
+    if(pr){ pr.rating = t.value ? parseFloat(t.value) : null; saveSettings(); renderSettings(); refreshOpenDetail(); }
+    return;
+  }
   if(t.matches('[data-rating-kind]')){
     const k = t.dataset.ratingKind;
     S.ratings[k] = t.value ? parseFloat(t.value) : null;
@@ -2803,6 +3005,9 @@ document.addEventListener('input', e => {
     ui.q = t.value.trim(); $('#qx').hidden = !t.value;
     renderList();
     if(filterSheet) $('.sheet-foot', filterSheet).innerHTML = filterFoot();
+  } else if(t.matches('[data-pname]')){
+    const pr = S.partners.find(x => x.id === t.dataset.pname);
+    if(pr){ pr.name = t.value.slice(0, 30); save(LS.settings, S); scheduleProfile(); }
   } else if(t.matches('[data-city-q]')){
     const cl = t.closest('.wsec, .sheet-body, .group').querySelector('.citylist');
     cl.innerHTML = cityRows(t.value.trim());
@@ -2821,6 +3026,8 @@ document.addEventListener('input', e => {
   }
 });
 document.addEventListener('submit', e => e.preventDefault());
+// "Other events" stays open or closed across re-renders
+document.addEventListener('toggle', e => { if(e.target && e.target.matches && e.target.matches('[data-restopen]')) ui.restOpen = e.target.open; }, true);
 
 /* Status-bar strip and the search bar's frosted background follow the scroll position.
    Checked on scroll, on tab change and after every Browse render, so it can't get stuck. */
