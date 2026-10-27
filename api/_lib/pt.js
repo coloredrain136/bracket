@@ -89,6 +89,7 @@ export async function getEvents(slug){
   return {
     playerCountHidden: !!j.tourneyPlayerCountHidden,
     events: groups.flatMap(g => (g.events || []).map(e => ({
+      id: e.eventId != null ? String(e.eventId) : '',   // stable id, used for "your events" picks
       group: String(g.groupTitle || ''),
       title: String(e.title || ''),
       players: String(e.playerGroup || ''),     // Mens | Womens | Mixed | Coed
