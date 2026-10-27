@@ -227,6 +227,7 @@ html[data-mode="light"] .tag.prize{ color:#8a6d00; }
 .lv.up{ color:var(--blue); }
 .lv.no{ color:var(--faint); font-weight:600; }
 .lv.pick{ color:var(--accent-text); }
+.fnote{ margin:0 2px 10px; padding:9px 12px; border-radius:12px; background:var(--seg-bg); }
 .lvline{ font-size:var(--t-sm); margin:0 0 4px; line-height:1.35; overflow-wrap:anywhere; }
 .ev .pick{ flex:none; width:34px; height:34px; border-radius:50%; border:2px solid var(--faint); background:transparent; display:grid; place-items:center; color:transparent; padding:0; margin-left:-2px; }
 .ev .pick svg{ width:18px; height:18px; }
@@ -707,7 +708,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-11';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-12';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -753,6 +754,7 @@ delete S.level;
 const NOTIFY_DEFAULTS = { partner: true, tomorrow: true, closing: true, events: true, early: true, changes: false };
 S.notify = Object.assign({}, NOTIFY_DEFAULTS, S.notify || {});
 S.ratings = { doubles: (S.ratings && S.ratings.doubles) ?? null, singles: (S.ratings && S.ratings.singles) ?? null };   // bracket-8: mixed uses doubles
+if(S.cardLine == null) S.cardLine = false;   // bracket-12: the ✓ best-event line on cards is opt-in
 // Saved partners (bracket-11): { id, name, rating, kind: 'mixed' | 'doubles' }
 S.partners = Array.isArray(S.partners) ? S.partners.filter(p => p && typeof p === 'object').slice(0, 6).map(p => ({ id: String(p.id || Math.random().toString(36).slice(2, 8)), name: String(p.name || '').slice(0, 30), rating: p.rating != null && !isNaN(+p.rating) ? +p.rating : null, kind: p.kind === 'doubles' ? 'doubles' : 'mixed' })) : [];
 if(S.filters.level && S.filters.level !== 'fit' && S.filters.level !== 'up') S.filters.level = 'fit';
@@ -925,11 +927,13 @@ function cardLevel(t){
     const mine = list.filter(x => pickHit(picks, x[0], x[1]));
     if(mine.length) return { k: 'pick', txt: '★ ' + evLine(mine[0]) + (mine.length > 1 ? ` · +${mine.length - 1} more` : '') };
   }
+  if(!S.cardLine) return null;   // Settings → Display → "Best event on cards" (off by default)
   if(!list) return levelInfo(t);
   if(!hasRating()) return null;
-  const tagged = list.filter(x => x[3] != null && !isOpenRange(x[3], x[4])).map(x => ({ x, l: evLevel(x[2], x[3], x[4]) }));
+  const fon = evFilterOn();
+  const tagged = list.filter(x => x[3] != null && !isOpenRange(x[3], x[4]) && (!fon || evMatches(x[2], x[3], x[4]))).map(x => ({ x, l: evLevel(x[2], x[3], x[4]) }));
   if(!tagged.length) return null;
-  const fits = tagged.filter(o => o.l.mine).sort((a, b) => b.x[5] - a.x[5] || a.x[3] - b.x[3]);
+  const fits = tagged.filter(o => o.l.mine || (fon && S.filters.level === 'up' && o.l.up)).sort((a, b) => b.x[5] - a.x[5] || a.x[3] - b.x[3]);
   if(fits.length) return { k: 'fit', txt: '✓ ' + evLine(fits[0].x) + (fits.length > 1 ? ` · +${fits.length - 1} more` : '') };
   if(tagged.some(o => o.l.up)) return { k: 'up', txt: '↑ Play-up events only' };
   return { k: 'no', txt: 'No events at your level' };
@@ -1109,7 +1113,25 @@ function whenLabel(f = S.filters){
   return 'Any time';
 }
 
-/* ---------------- Filters ---------------- */
+/* ---------------- Filters ----------------
+   Format + level are matched per event (bracket-12): "Singles + My level" needs a singles event AT your level,
+   not just some singles event and some event at your level. Inside a tournament only matching events show. */
+const evFilterOn = (f = S.filters) => f.formats.length > 0 || (!!f.level && hasRating());
+function evMatches(fmt, lo, hi, f = S.filters){
+  if(f.formats.length && !f.formats.includes(fmt)) return false;
+  if(f.level && hasRating()){
+    if(lo == null || hi == null || isOpenRange(lo, hi)) return false;
+    const l = evLevel(fmt, lo, hi);
+    if(!(l.mine || (f.level === 'up' && l.up))) return false;
+  }
+  return true;
+}
+function filterWords(f = S.filters){
+  const parts = [];
+  if(f.formats.length) parts.push(f.formats.join(', '));
+  if(f.level && hasRating()) parts.push(f.level === 'up' ? 'my level + play up' : 'my level');
+  return parts.join(' · ');
+}
 function passes(t, f = S.filters, skipWhen){
   if(!skipWhen){
     if(f.when === '30' || f.when === '90'){
@@ -1121,6 +1143,9 @@ function passes(t, f = S.filters, skipWhen){
       if(!overlaps(t, f.from, f.to || f.from)) return false;
     }
   }
+  if(evFilterOn(f) && t.ev && Array.isArray(t.ev.list) && t.ev.list.length){
+    if(!t.ev.list.some(x => evMatches(x[2], x[3], x[4], f))) return false;
+  } else {
   if(f.formats.length && t.ev && t.ev.formats && t.ev.formats.length){
     if(!f.formats.some(x => t.ev.formats.includes(x))) return false;
   }
@@ -1128,6 +1153,7 @@ function passes(t, f = S.filters, skipWhen){
     const rr = tourRanges(t);
     if(rr.length && !rr.some(r => covers(r[0], r[1], r[2]) || (f.level === 'up' && isUp(r[0], r[1], r[2])))) return false;
   }
+  }   // older cached lists without the per-event list
   if(f.maxPrice != null && !t.free && t.price != null && t.price > f.maxPrice) return false;
   if(f.maxDist != null && S.home){
     const d = distOf(t);
@@ -1437,7 +1463,9 @@ function renderSettings(){
     <div class="group-l">Notifications</div>
     <div class="group">${row('sp-notify', 'bell', 'orange', 'Notifications', pushState.on ? 'On' : 'Off', 'Reminders about tournaments you saved')}</div>
     <div class="group-l">Display</div>
-    <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}</div>
+    <div class="group">${row('sp-looks', 'sun', 'purple', 'Appearance', MODE_NAMES[S.mode] + ' · ' + SIZE_NAMES[S.size || 'm'] + ' text')}
+      <div class="gitem">${tile('check', 'green')}<span class="t">Best event on cards<small>Adds a line like “✓ Mixed 3.0–3.49 · 6 of 16 teams” to each tournament</small></span>${swHTML('sw-cardline', S.cardLine, 'Best event on cards')}</div></div>
+    <p class="gfoot">Events you picked (★) always show on their card.</p>
     <div class="group-l">Help</div>
     <div class="group">
       ${row('sp-help', 'book', 'yellow', 'How Bracket works')}
@@ -1573,7 +1601,7 @@ function settingsPage(p){
     <div class="group-l">Where the info comes from</div>
     <div class="group"><p>Bracket reads the public tournament listings on pickleballtournaments.com and checks for changes about every 30 minutes. If their site is down, Bracket shows the last list it had and says so at the top.</p><p>Bracket isn't official, so always double-check details on their page before you pay.</p></div>
     <div class="group-l">Finding tournaments</div>
-    <div class="group"><ul><li><b>Search</b> by tournament name or city.</li><li><b>List</b> shows everything coming up, by month. <b>Calendar</b> shows a month at a time; tap a day with a green number to see what's on.</li><li><b>Filters</b>: pick a weekend or dates, your level, format (Doubles, Mixed, Singles, Team), max price, distance from home, and “open to register only”.</li><li>The chips under the search bar show which filters are on. Tap the ✕ on one to turn it off.</li></ul></div>
+    <div class="group"><ul><li><b>Search</b> by tournament name or city.</li><li><b>List</b> shows everything coming up, by month. <b>Calendar</b> shows a month at a time; tap a day with a green number to see what's on.</li><li><b>Filters</b>: pick a weekend or dates, your level, format (Doubles, Mixed, Singles, Team), max price, distance from home, and “open to register only”.</li><li>Format and level work together: “Singles” + “My level” shows tournaments with a singles event at your level, and inside each one you only see those events. Tap <b>Show all</b> to see the rest.</li><li>The chips under the search bar show which filters are on. Tap the ✕ on one to turn it off.</li></ul></div>
     <div class="group-l">Status tags</div>
     <div class="group">
       <div class="demo-row"><span class="tag open">Registration open</span>You can sign up now.</div>
@@ -1586,7 +1614,7 @@ function settingsPage(p){
       <p style="margin-top:8px">“Closes” and “Opens” show once Bracket has loaded that tournament's details (open it once, or save it).</p></div>
     <div class="group-l">Levels and your rating</div>
     <div class="group"><p>Each event has a level range, like 3.0–3.5 or 4.0 and up. Set <b>Your rating</b> (your DUPR, or the level you usually play) and Bracket finds events that include it.</p><p>Bracket always shows levels as a range. A “3.5” event means 3.5–3.99. Example: at <b>3.40</b>, your level is <b>3.0–3.5</b> events. One step up, <b>3.5–4.0</b>, is “playing up”: tougher, but some players like the challenge.</p>
-      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p><p>Cards name the event that fits you best, like “Mixed Doubles 3.5–3.99 · 5 of 16 teams”, so you can see how full it is.</p></div>
+      <div class="demo"><span class="yl" style="margin:0">Your level</span><span class="yl up">Play up</span></div><p>Have different doubles and singles ratings (DUPR shows them separately)? Add them under <b>Settings → Your rating → By event type</b>. Bracket uses the right one for each event, and your general rating for the rest.</p><p>Inside a tournament, events at your level are outlined in green and play-up events in blue. In Filters, choose “My level” or “+ Play up”.</p><p>Want each card to name the event that fits you best, like “Mixed Doubles 3.5–3.99 · 5 of 16 teams”? Turn on <b>Settings → Best event on cards</b>.</p></div>
     <div class="group-l">Partners</div>
     <div class="group"><p>Play mixed or doubles with someone rated higher or lower? Add them in <b>Settings → Partners</b> with their rating. Bracket uses the higher of your two ratings to find your team's level (that's how most tournaments place teams) and marks those events “With Sam”.</p><p>Example: you 3.40 + partner 3.80 → your team plays 3.5–4.0 events (including 3.5–3.99).</p></div>
     <div class="group-l">Your events</div>
@@ -1752,10 +1780,6 @@ function detailBody(t){
     h += `<div class="blk cost"><h3>Cost${fees.length ? '<small>from the organizer</small>' : ''}</h3>${fees.length ? `<ul>${fees.map(f => `<li>${esc(f)}</li>`).join('')}</ul>` : `<p class="desc" style="margin:0">Each event costs extra on top of the $${Math.round(curPrice || 0)} registration. The organizer didn't list event prices here, so check on their site.</p>`}${est}</div>`;
   }
 
-  // ---- Quality
-  const q = quality(Object.assign({}, tt, { players }), events.length || null);
-  h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
-
   // ---- Where
   if(det.venue || det.street || tt.location){
     const lines = [det.street, det.cityStateZip].filter(Boolean).join(', ') || tt.location;
@@ -1766,6 +1790,10 @@ function detailBody(t){
     h += '<div class="skel sm" style="margin:16px 0"></div>';
   }
 
+  // ---- Quality
+  const q = quality(Object.assign({}, tt, { players }), events.length || null);
+  h += `<div class="blk"><h3>Quality<small>mostly from player count</small></h3><div class="qhead">${meter(q.q, true)}<b>${q.label}</b></div><ul class="reasons">${q.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>`;
+
   // ---- Events: the ones you picked on top, the rest grouped by level
   if(events.length){
     const picks = picksOf(slug);
@@ -1774,10 +1802,14 @@ function detailBody(t){
       const l = R != null && r && !r.open ? evLevel(fmtOf(e), r.lo, r.hi) : { mine: false, up: false, who: null };
       return Object.assign({ r, mine: l.mine, upE: l.up, who: l.who, key: evKey(e), picked: pickHit(picks, e.id, e.title) }, e);
     });
-    const yours = tagged.filter(e => e.picked), rest = tagged.filter(e => !e.picked);
+    const yours = tagged.filter(e => e.picked);
+    const fon = evFilterOn(), restAll = tagged.filter(e => !e.picked);
+    const fmatch = e => evMatches(fmtOf(e), e.r && !e.r.open ? e.r.lo : (e.r ? 0 : null), e.r && !e.r.open ? e.r.hi : (e.r ? 9 : null));
+    const filtering = fon && !ui.evAll;
+    const rest = filtering ? restAll.filter(fmatch) : restAll;
     const mineCount = tagged.filter(e => e.mine).length, upCount = tagged.filter(e => e.upE).length;
     const restMU = rest.filter(e => e.mine || e.upE).length;
-    const showMine = R != null && ui.evMine && restMU > 0;
+    const showMine = !fon && R != null && ui.evMine && restMU > 0;
     const evRow = e => {
       const word = /singles/i.test(e.format) ? 'players' : 'teams';
       const meta = [e.age && !/^\(?any\)?$/i.test(e.age) ? 'Age ' + e.age.replace(/[()]/g, '') : '', evWhen(e), e.bracket].filter(Boolean).join(' · ');
@@ -1807,18 +1839,21 @@ function detailBody(t){
       });
       return out;
     };
-    const toggle = R != null && restMU ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
+    const toggle = !fon && R != null && restMU ? `<button class="chip plain" data-act="evmine" aria-pressed="${showMine}">${showMine ? 'Showing my levels' : 'Show my levels'}</button>` : '';
     const showAll = showMine ? `<p class="fine">Showing ${pl(restMU, 'event')} at or one step above ${S.partners.length ? 'your (and your team’s) levels' : specificCount() ? 'your levels' : rt(R)}. <button class="linkbtn" data-act="evmine">Show all ${rest.length}</button></p>` : '';
     const counts = `${events.length}${R != null ? ` · ${mineCount} your level${upCount ? ` · ${upCount} play up` : ''}` : ''}`;
+    const fnote = !fon ? '' : filtering
+      ? `<p class="fine fnote">${rest.length ? `Showing ${pl(rest.length, 'event')} that ${rest.length === 1 ? 'matches' : 'match'} your filters (${esc(filterWords())}).` : `None of the other events match your filters (${esc(filterWords())}).`} <button class="linkbtn" data-act="evall">Show all ${restAll.length}</button></p>`
+      : `<p class="fine fnote">Showing all ${restAll.length} events. <button class="linkbtn" data-act="evall">Only show ${esc(filterWords())}</button></p>`;
     if(yours.length){
       h += `<div class="blk"><h3><span>Your events <small>${yours.length}</small></span></h3><div class="yours">${yours.map(evRow).join('')}</div>
         <p class="fine">These stay on top, show on the card, and can send you an alert when they fill up. Tap ✓ again to remove one.</p>`;
-      if(rest.length) h += `<details class="evother"${ui.restOpen ? ' open' : ''} data-restopen><summary><span>Other events <small>${rest.length}</small></span>${icon('chev')}</summary>
-        ${toggle ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px">${toggle}</div>` : ''}${grouped(rest)}${showAll}</details>`;
+      if(restAll.length) h += `<details class="evother"${ui.restOpen ? ' open' : ''} data-restopen><summary><span>Other events <small>${rest.length}</small></span>${icon('chev')}</summary>
+        ${toggle ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px">${toggle}</div>` : ''}${fnote}${grouped(rest)}${showAll}</details>`;
       h += '</div>';
     } else {
-      h += `<div class="blk"><h3><span>Events <small>${counts}</small></span>${toggle}</h3>
-        <p class="fine" style="margin:-2px 2px 10px">Only into a few? Tap ○ on the events you'd play. They'll stay at the top.</p>${grouped(rest)}${showAll}`;
+      h += `<div class="blk"><h3><span>Events <small>${filtering ? `${rest.length} of ${events.length}` : counts}</small></span>${toggle}</h3>
+        ${fnote}<p class="fine" style="margin:-2px 2px 10px">Only into a few? Tap ○ on the events you'd play. They'll stay at the top.</p>${grouped(rest)}${showAll}`;
       h += '</div>';
     }
     if(R != null && !S.partners.length && tagged.some(e => pKindOf(fmtOf(e)))) h += `<p class="fine">Playing with a partner? <button class="linkbtn" data-act="go-partners">Add their rating</button> and Bracket finds your team's level.</p>`;
@@ -1855,7 +1890,7 @@ function detailFoot(t){
 
 let detailSheet = null;
 function openTournament(slug){
-  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true; ui.restOpen = false;
+  ui.openSlug = slug; ui.descOpen = false; ui.evMine = true; ui.restOpen = false; ui.evAll = false;
   loadPartnerPosts(slug);
   ui.openChanges = changesFor(slug);
   if(ui.openChanges.length){ markSeen(slug); renderBadge(); if(ui.tab === 'mine') renderMine(true); else if(ui.tab === 'browse') renderList(); }
@@ -2855,6 +2890,8 @@ document.addEventListener('click', e => {
     case 'more': ui.descOpen = true; refreshOpenDetail(); break;
     case 'evmine': ui.evMine = !ui.evMine; refreshOpenDetail(); break;
     case 'pick': togglePick(slug, el.dataset.k); break;
+    case 'sw-cardline': S.cardLine = !S.cardLine; el.setAttribute('aria-checked', S.cardLine); save(LS.settings, S); break;
+    case 'evall': ui.evAll = !ui.evAll; refreshOpenDetail(); break;
     case 'go-partners': goSettingsPage('partners'); break;
     case 'sp-partners': openSPage('partners'); break;
     case 'p-add': S.partners.push({ id: Math.random().toString(36).slice(2, 8), name: '', rating: null, kind: 'mixed' }); saveSettings(); renderSettings(); { const ins = document.querySelectorAll('[data-pname]'); if(ins.length) ins[ins.length - 1].focus(); } break;
