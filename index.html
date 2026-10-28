@@ -695,7 +695,7 @@ input[type=range]:disabled{ opacity:.4; }
    Data: pickleballtournaments.com via /api/tournaments and /api/tournament
    Everything personal lives in this browser's localStorage.
    ===================================================================== */
-const VERSION = 'bracket-14';   // keep in step with APP_VERSION in api/_lib/find.js
+const VERSION = 'bracket-15';   // keep in step with APP_VERSION in api/_lib/find.js
 const PT = 'https://pickleballtournaments.com';
 const LS = { settings: 'bracket_settings', saves: 'bracket_saves', list: 'bracket_list', details: 'bracket_details' };
 const LIST_MAX_AGE = 30 * 60 * 1000;      // refetch the list after 30 min
@@ -1891,6 +1891,9 @@ function renderPanel(){
 
 /* ---------------- Share, calendar, Home Screen ---------------- */
 async function shareTo(title, text, url){
+  // A message that starts with "Word:" looks like a link scheme (like "mailto:") to iOS, which then
+  // turns the whole text into a fake link with %20 for every space when it's pasted. Never start that way.
+  text = String(text).replace(/^([A-Za-z][\w+.-]*):\s*/, '$1 – ');
   if(navigator.share){
     try { await navigator.share({ title, text, url }); } catch(e){}
     return;
@@ -1903,7 +1906,7 @@ function shareTournament(slug){
   const text = [t.title, t.startDay ? fmtSpan(t.startDay, t.endDay) : '', t.city].filter(Boolean).join(' · ');
   shareTo(t.title, text, location.origin + '/t/' + encodeURIComponent(slug));
 }
-function shareApp(){ shareTo('Bracket', 'Bracket: an easy way to find Michigan pickleball tournaments.', location.origin + '/'); }
+function shareApp(){ shareTo('Bracket', 'Bracket – an easy way to find Michigan pickleball tournaments.', location.origin + '/'); }
 function googleCalUrl(t){
   const d = detailOf(t.slug), det = d && d.detail ? d.detail : {};
   const where = [det.venue, det.street, det.cityStateZip].filter(Boolean).join(', ') || t.location || '';
